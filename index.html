@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jastipbyceline · Admin Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -37,15 +38,30 @@
             color: #666;
             margin-top: 10px;
         }
-        .backup-buttons {
-            display: flex;
-            gap: 10px;
-        }
         .main-content {
             background: white;
             border-radius: 0 0 20px 20px;
             padding: 30px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .setup-section {
+            background: #f0f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px solid #7dd3fc;
+        }
+        .setup-section input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .setup-section button {
+            background: #0e7a9e;
+            margin-right: 10px;
         }
         .import-section {
             background: #f8f9fa;
@@ -98,19 +114,6 @@
         }
         .btn-success:hover {
             background: #218838;
-        }
-        .btn-warning {
-            background: #ffc107;
-            color: #333;
-        }
-        .btn-warning:hover {
-            background: #e0a800;
-        }
-        .btn-danger {
-            background: #dc3545;
-        }
-        .btn-danger:hover {
-            background: #c82333;
         }
         .customers-grid {
             display: grid;
@@ -192,42 +195,16 @@
             animation: slideIn 0.3s;
             z-index: 1000;
         }
-        .notification.new-customer {
-            background: #17a2b8;
-        }
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-        .first-order-info {
+        .status-connected {
             background: #d4edda;
-            border-left: 4px solid #28a745;
+            color: #155724;
             padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-        .existing-order-info {
-            background: #e9ecef;
-            border-left: 4px solid #6c757d;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-        .backup-panel {
-            background: #e3f2fd;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 1px solid #90caf9;
-        }
-        .backup-panel h3 {
-            color: #0d47a1;
+            border-radius: 8px;
             margin-bottom: 15px;
-        }
-        .file-input {
-            display: none;
         }
     </style>
 </head>
@@ -236,67 +213,102 @@
         <div class="header">
             <div>
                 <h1>📦 JASTIPBYCELINE ADMIN</h1>
-                <p>🔐 Private link system · Link tetap untuk customer yang sama</p>
-            </div>
-            <div class="backup-buttons">
-                <button class="btn-success" onclick="exportData()">💾 EXPORT DATA</button>
-                <button class="btn-warning" onclick="document.getElementById('fileInput').click()">📂 IMPORT JSON</button>
-                <button class="btn-danger" onclick="clearAllData()">🗑️ CLEAR ALL</button>
+                <p>🔐 Dengan Supabase · Data online, akses dari mana saja</p>
             </div>
         </div>
         
         <div class="main-content">
-            <div class="backup-panel">
-                <h3>📋 BACKUP & RESTORE DATA</h3>
-                <p style="margin-bottom: 15px;">Export data ke file JSON untuk dipindah ke device lain atau sebagai backup.</p>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="btn-success" onclick="exportData()">💾 EXPORT DATA (JSON)</button>
-                    <button class="btn-warning" onclick="document.getElementById('fileInput').click()">📂 RESTORE FROM JSON</button>
-                    <span style="color: #666; margin-left: 10px;">Data tersimpan: <span id="dataCount">0</span> customer</span>
-                </div>
-                <input type="file" id="fileInput" class="file-input" accept=".json" onchange="importFromFile(event)">
+            <!-- SETUP SUPABASE -->
+            <div class="setup-section" id="setupSection">
+                <h3>🔌 Koneksi ke Supabase</h3>
+                <p>Masukkan URL dan Key dari project Supabase kamu:</p>
+                <input type="text" id="supabaseUrl" placeholder="https://xyzabc.supabase.co" value="https://ntyetosvnafeuhnmljd.supabase.co">
+                <input type="text" id="supabaseKey" placeholder="anon public key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU">
+                <button onclick="connectSupabase()" class="btn-success">🔌 CONNECT</button>
+                <button onclick="createTable()" class="btn-success">📋 CREATE TABLE</button>
+                <div id="connectionStatus"></div>
             </div>
 
             <div class="import-section">
-                <h2 style="margin-bottom: 15px;">📋 IMPORT DATA CUSTOMER (CSV/Text)</h2>
+                <h2 style="margin-bottom: 15px;">📋 IMPORT DATA CUSTOMER</h2>
                 <div class="format-info">
-                    <strong>Format (pisah dengan spasi atau |):</strong><br>
+                    <strong>Format (pisah dengan spasi):</strong><br>
                     NoHP Nama Produk Qty Harga Status DP<br>
-                    <small>Contoh: 81399999999 danny celana 1 159000 dapat 50000</small>
+                    <small>Contoh: 81399999999 danny sepatu-5073 1 159000 dapat 50000</small>
                 </div>
                 <textarea id="importData" placeholder="Tempel data disini..."></textarea>
-                <button onclick="importData()">✨ IMPORT DATA</button>
-                <button class="btn-warning" onclick="clearImportField()">🗑️ Clear</button>
+                <button onclick="importToSupabase()" class="btn-success">✨ IMPORT KE DATABASE</button>
             </div>
 
-            <h2 style="margin-bottom: 20px;">📱 DAFTAR CUSTOMER & LINK PRIVATE</h2>
+            <h2 style="margin-bottom: 20px;">📱 DAFTAR CUSTOMER</h2>
             <div id="customersList" class="customers-grid"></div>
             
             <div class="warning">
-                ⚠️ <strong>PENTING:</strong> 
-                <ul style="margin-left: 20px; margin-top: 5px;">
-                    <li>🟢 <strong>Customer baru:</strong> Akan otomatis dibuatkan link baru</li>
-                    <li>🔵 <strong>Customer lama:</strong> Link tetap sama, data terupdate</li>
-                    <li>💾 <strong>Backup data:</strong> Export JSON sebelum ganti browser/device</li>
-                </ul>
+                ⚠️ <strong>PENTING:</strong> Data tersimpan di cloud Supabase. Customer bisa buka link langsung dari HP!
             </div>
         </div>
     </div>
 
     <script>
-        // Data storage
-        let customers = JSON.parse(localStorage.getItem('jastip_customers')) || {};
+        let supabase = null;
+        let supabaseConnected = false;
 
-        function updateDataCount() {
-            document.getElementById('dataCount').innerText = Object.keys(customers).length;
-        }
-
-        function showNotification(message, isNew = false) {
+        function showNotification(message, isError = false) {
             const notif = document.createElement('div');
-            notif.className = `notification ${isNew ? 'new-customer' : ''}`;
+            notif.className = 'notification';
+            notif.style.background = isError ? '#dc3545' : '#28a745';
             notif.textContent = message;
             document.body.appendChild(notif);
             setTimeout(() => notif.remove(), 3000);
+        }
+
+        function connectSupabase() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            if (!url || !key) {
+                showNotification('Isi URL dan Key dulu!', true);
+                return;
+            }
+
+            try {
+                supabase = window.supabase.createClient(url, key);
+                supabaseConnected = true;
+                document.getElementById('connectionStatus').innerHTML = '<div class="status-connected">✅ Terkoneksi ke Supabase!</div>';
+                showNotification('✅ Berhasil connect ke Supabase');
+                loadCustomers();
+            } catch (e) {
+                showNotification('Gagal connect: ' + e.message, true);
+            }
+        }
+
+        async function createTable() {
+            if (!supabase) {
+                showNotification('Connect dulu ke Supabase!', true);
+                return;
+            }
+
+            try {
+                // Coba buat table dengan insert dummy
+                const { error } = await supabase
+                    .from('customers')
+                    .insert([{ 
+                        phone: 'temp', 
+                        name: 'temp', 
+                        products: [], 
+                        total_dp: 0 
+                    }])
+                    .select();
+                
+                if (error && error.message.includes('relation') && error.message.includes('does not exist')) {
+                    showNotification('Tabel belum ada. Buat manual di Supabase SQL Editor!', true);
+                    window.open('https://supabase.com/dashboard/project/ntyetosvnafeuhnmljd/sql', '_blank');
+                } else {
+                    showNotification('✅ Tabel sudah siap!');
+                }
+            } catch (e) {
+                showNotification('Error: ' + e.message, true);
+            }
         }
 
         function generatePrivateLink(phone) {
@@ -305,179 +317,104 @@
             return `${baseUrl}/customer.html?id=${phone}&token=${token}`;
         }
 
-        function isNewCustomer(phone) {
-            return !customers[phone];
-        }
-
-        function parseLine(line) {
-            line = line.trim();
-            if (!line) return null;
-
-            let parts;
-            if (line.includes('|')) {
-                parts = line.split('|').map(p => p.trim());
-            } else {
-                parts = line.split(/\s+/);
+        async function importToSupabase() {
+            if (!supabase) {
+                showNotification('Connect dulu ke Supabase!', true);
+                return;
             }
 
-            if (parts.length < 6) return null;
-
-            let noHp, nama, produk, qty, harga, status, dp = 0;
-            
-            if (parts.length >= 7) {
-                [noHp, nama, produk, qty, harga, status, dp] = parts;
-            } else {
-                [noHp, nama, produk, qty, harga, status] = parts;
-            }
-
-            noHp = noHp.replace(/\D/g, '');
-            
-            return {
-                noHp,
-                nama,
-                produk,
-                qty: parseInt(qty) || 0,
-                harga: parseInt(harga) || 0,
-                status,
-                dp: parseInt(dp) || 0
-            };
-        }
-
-        function importData() {
             const text = document.getElementById('importData').value;
             if (!text) {
-                showNotification('Masukkan data dulu!', false);
+                showNotification('Masukkan data dulu!', true);
                 return;
             }
 
             const lines = text.split('\n');
             let imported = 0;
-            let newCustomers = {};
-            let newCustomerPhones = [];
-            let existingCustomerPhones = [];
 
-            lines.forEach(line => {
-                const data = parseLine(line);
-                if (data) {
-                    const isNew = isNewCustomer(data.noHp);
-                    
-                    if (!newCustomers[data.noHp]) {
-                        newCustomers[data.noHp] = {
-                            noHp: data.noHp,
-                            nama: data.nama,
-                            products: [],
-                            totalDp: 0,
-                            lastUpdate: new Date().toLocaleString('id-ID'),
-                            firstOrder: isNew ? new Date().toISOString() : customers[data.noHp]?.firstOrder,
-                            isNewCustomer: isNew
-                        };
-                        
-                        if (isNew) {
-                            newCustomerPhones.push(data.noHp);
-                        } else {
-                            existingCustomerPhones.push(data.noHp);
-                        }
-                    }
-                    
-                    newCustomers[data.noHp].products.push({
-                        nama: data.produk,
-                        qty: data.qty,
-                        harga: data.harga,
-                        status: data.status,
-                        dp: data.dp
-                    });
-                    newCustomers[data.noHp].totalDp += data.dp;
-                    imported++;
-                }
-            });
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
 
-            Object.keys(newCustomers).forEach(phone => {
-                if (customers[phone]) {
-                    customers[phone].products = [
-                        ...customers[phone].products,
-                        ...newCustomers[phone].products
-                    ];
-                    customers[phone].totalDp += newCustomers[phone].totalDp;
-                    customers[phone].lastUpdate = new Date().toLocaleString('id-ID');
+                const parts = line.split(/\s+/);
+                if (parts.length < 6) continue;
+
+                let noHp, nama, produk, qty, harga, status, dp = 0;
+                
+                if (parts.length >= 7) {
+                    [noHp, nama, produk, qty, harga, status, dp] = parts;
                 } else {
-                    customers[phone] = newCustomers[phone];
+                    [noHp, nama, produk, qty, harga, status] = parts;
                 }
-            });
 
-            localStorage.setItem('jastip_customers', JSON.stringify(customers));
-            
-            if (newCustomerPhones.length > 0) {
-                showNotification(`✅ ${newCustomerPhones.length} CUSTOMER BARU dengan link baru!`, true);
-            }
-            if (existingCustomerPhones.length > 0) {
-                showNotification(`🔄 ${existingCustomerPhones.length} customer lama (link tetap)`, false);
-            }
-            
-            document.getElementById('importData').value = '';
-            renderCustomers();
-            updateDataCount();
-        }
+                noHp = noHp.replace(/\D/g, '');
+                
+                // Cek apakah customer sudah ada
+                const { data: existing } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('phone', noHp)
+                    .maybeSingle();
 
-        function exportData() {
-            const dataStr = JSON.stringify(customers, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `jastip-backup-${new Date().toISOString().slice(0,10)}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
-            showNotification(`✅ Data ${Object.keys(customers).length} customer diexport!`);
-        }
+                const productData = {
+                    nama: produk,
+                    qty: parseInt(qty) || 0,
+                    harga: parseInt(harga) || 0,
+                    status: status,
+                    dp: parseInt(dp) || 0
+                };
 
-        function importFromFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    customers = importedData;
-                    localStorage.setItem('jastip_customers', JSON.stringify(customers));
-                    renderCustomers();
-                    updateDataCount();
-                    showNotification(`✅ Berhasil import ${Object.keys(customers).length} customer dari file!`);
-                } catch (error) {
-                    showNotification('❌ File JSON tidak valid!', false);
+                if (existing) {
+                    // Update existing customer
+                    const currentProducts = existing.products || [];
+                    currentProducts.push(productData);
+                    
+                    await supabase
+                        .from('customers')
+                        .update({ 
+                            products: currentProducts,
+                            total_dp: (existing.total_dp || 0) + (parseInt(dp) || 0),
+                            last_update: new Date().toLocaleString('id-ID')
+                        })
+                        .eq('phone', noHp);
+                } else {
+                    // Customer baru
+                    await supabase
+                        .from('customers')
+                        .insert([{
+                            phone: noHp,
+                            name: nama,
+                            products: [productData],
+                            total_dp: parseInt(dp) || 0,
+                            last_update: new Date().toLocaleString('id-ID'),
+                            first_order: new Date().toISOString()
+                        }]);
                 }
-            };
-            reader.readAsText(file);
-            
-            // Reset file input
-            event.target.value = '';
-        }
-
-        function clearAllData() {
-            if (confirm('Hapus SEMUA data customer? Data tidak bisa dikembalikan!')) {
-                customers = {};
-                localStorage.removeItem('jastip_customers');
-                renderCustomers();
-                updateDataCount();
-                showNotification('🗑️ Semua data dihapus!');
+                imported++;
             }
-        }
 
-        function clearImportField() {
+            showNotification(`✅ Berhasil import ${imported} produk`);
             document.getElementById('importData').value = '';
+            loadCustomers();
         }
 
-        function renderCustomers() {
+        async function loadCustomers() {
+            if (!supabase) return;
+
+            const { data: customers, error } = await supabase
+                .from('customers')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error loading:', error);
+                return;
+            }
+
             const container = document.getElementById('customersList');
             container.innerHTML = '';
 
-            const sortedCustomers = Object.values(customers).sort((a, b) => {
-                return new Date(b.firstOrder || 0) - new Date(a.firstOrder || 0);
-            });
-
-            sortedCustomers.forEach(customer => {
+            customers.forEach(customer => {
                 let totalBelanja = 0;
                 let totalItems = 0;
                 
@@ -486,58 +423,35 @@
                     totalItems += p.qty;
                 });
 
-                const link = generatePrivateLink(customer.noHp);
-                const sisa = totalBelanja - customer.totalDp;
+                const link = generatePrivateLink(customer.phone);
+                const sisa = totalBelanja - (customer.total_dp || 0);
                 
-                const isNew = customer.firstOrder && 
-                    (new Date() - new Date(customer.firstOrder)) < 24 * 60 * 60 * 1000;
+                const isNew = customer.first_order && 
+                    (new Date() - new Date(customer.first_order)) < 24 * 60 * 60 * 1000;
 
                 const card = document.createElement('div');
                 card.className = 'customer-card';
                 
-                let badgeHtml = '';
-                if (isNew) {
-                    badgeHtml = '<span class="new-customer-badge">🆕 CUSTOMER BARU</span>';
-                }
-                
-                let orderInfoHtml = '';
-                if (isNew) {
-                    orderInfoHtml = `
-                        <div class="first-order-info">
-                            🆕 <strong>First time order</strong> - Link baru dibuat otomatis
-                        </div>
-                    `;
-                } else {
-                    orderInfoHtml = `
-                        <div class="existing-order-info">
-                            🔄 <strong>Repeat order</strong> - Link tetap sama, data terupdate
-                        </div>
-                    `;
-                }
+                let badgeHtml = isNew ? '<span class="new-customer-badge">🆕 BARU</span>' : '';
 
                 card.innerHTML = `
                     <div class="customer-header">
-                        <span class="customer-name">${customer.nama} ${badgeHtml}</span>
-                        <span class="customer-phone">${customer.noHp}</span>
+                        <span class="customer-name">${customer.name} ${badgeHtml}</span>
+                        <span class="customer-phone">${customer.phone}</span>
                     </div>
-                    <div class="private-link" id="link-${customer.noHp}">${link}</div>
-                    <button class="copy-btn" onclick="copyLink('${customer.noHp}')">📋 COPY PRIVATE LINK</button>
-                    ${orderInfoHtml}
+                    <div class="private-link" id="link-${customer.phone}">${link}</div>
+                    <button class="copy-btn" onclick="copyLink('${customer.phone}')">📋 COPY LINK</button>
                     <div class="stats">
                         <span>📦 ${totalItems} item</span>
                         <span>💰 Rp ${totalBelanja.toLocaleString()}</span>
                     </div>
-                    <div class="stats" style="margin-top: 5px;">
-                        <span>💵 DP: Rp ${customer.totalDp.toLocaleString()}</span>
-                        <span style="color: ${sisa > 0 ? '#dc3545' : '#28a745'}">💳 Sisa: Rp ${sisa.toLocaleString()}</span>
-                    </div>
-                    <div style="margin-top: 10px; font-size: 0.8rem; color: #999;">
-                        🕐 Update: ${customer.lastUpdate}
+                    <div class="stats">
+                        <span>💵 DP: Rp ${(customer.total_dp || 0).toLocaleString()}</span>
+                        <span>💳 Sisa: Rp ${sisa.toLocaleString()}</span>
                     </div>
                 `;
                 container.appendChild(card);
             });
-            updateDataCount();
         }
 
         function copyLink(phone) {
@@ -545,21 +459,16 @@
             const link = linkElement.textContent;
             
             navigator.clipboard.writeText(link).then(() => {
-                showNotification('✅ Link private disalin!');
-            }).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = link;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                showNotification('✅ Link private disalin!');
+                showNotification('✅ Link disalin!');
             });
         }
 
-        // Initial render
-        renderCustomers();
-        updateDataCount();
+        // Auto-connect dengan credential yang sudah diisi
+        window.onload = function() {
+            setTimeout(() => {
+                connectSupabase();
+            }, 500);
+        };
     </script>
 </body>
 </html>
