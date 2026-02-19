@@ -153,10 +153,10 @@
                     NoHP Nama Produk Qty Harga Status DP<br>
                     Contoh: 81365245060 danny5060 sepatu 1 159000 dapat 50000
                 </div>
-                <textarea id="importData" placeholder="Tempel data disini...">81365245060 danny5060 sepatu 1 159000 dapat 50000</textarea>
-                <div style="margin-top: 10px;">
+                <textarea id="importData" rows="5">81365245060 danny5060 sepatu 1 159000 dapat 50000</textarea>
+                <div style="margin-top: 15px;">
                     <button onclick="importData()">✨ IMPORT KE DATABASE</button>
-                    <button onclick="loadCustomers()" class="refresh-btn">🔄 REFRESH</button>
+                    <button onclick="refreshData()" style="background: #007bff;">🔄 REFRESH</button>
                 </div>
             </div>
 
@@ -168,9 +168,11 @@
     </div>
 
     <script>
-        // KONFIGURASI SUPABASE - PASTI SUDAH BENAR
+        // KONFIGURASI - PASTI BENAR
         const SUPABASE_URL = 'https://ntyetosvnafeuhnmljd.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU';
+        
+        // INISIALISASI SUPABASE - HANYA SEKALI
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // FUNGSI NOTIFIKASI
@@ -190,7 +192,7 @@
         }
 
         // FUNGSI IMPORT DATA
-        window.importData = async function() {
+        async function importData() {
             const text = document.getElementById('importData').value;
             if (!text) {
                 showNotification('Masukkan data dulu!', true);
@@ -199,6 +201,7 @@
 
             const lines = text.split('\n');
             let imported = 0;
+            let errors = 0;
 
             for (let line of lines) {
                 line = line.trim();
@@ -206,7 +209,7 @@
                 
                 const parts = line.split(/\s+/);
                 if (parts.length < 6) {
-                    console.log('Skipping line (kurang kolom):', line);
+                    errors++;
                     continue;
                 }
                 
@@ -229,7 +232,7 @@
                     };
                     
                     if (existing) {
-                        // Update existing customer
+                        // Update existing
                         const currentProducts = existing.products || [];
                         currentProducts.push(product);
                         
@@ -242,7 +245,7 @@
                             })
                             .eq('phone', noHp);
                     } else {
-                        // Insert new customer
+                        // Insert baru
                         await supabase
                             .from('customers')
                             .insert([{
@@ -257,16 +260,23 @@
                     imported++;
                 } catch (e) {
                     console.error('Error:', e);
+                    errors++;
                 }
             }
             
-            showNotification(`✅ Berhasil import ${imported} produk`);
+            if (imported > 0) {
+                showNotification(`✅ Berhasil import ${imported} produk`);
+            }
+            if (errors > 0) {
+                showNotification(`⚠️ ${errors} baris gagal`, true);
+            }
+            
             document.getElementById('importData').value = '';
-            loadCustomers();
-        };
+            refreshData();
+        }
 
-        // FUNGSI LOAD CUSTOMERS
-        window.loadCustomers = async function() {
+        // FUNGSI REFRESH DATA
+        async function refreshData() {
             const container = document.getElementById('customersList');
             container.innerHTML = '<p style="text-align: center; color: #666;">Memuat data...</p>';
             
@@ -325,15 +335,14 @@
                 console.error('Fatal error:', e);
                 container.innerHTML = '<p style="text-align: center; color: red;">Error: ' + e.message + '</p>';
             }
-        };
+        }
 
         // FUNGSI COPY LINK
-        window.copyLink = function(phone) {
+        function copyLink(phone) {
             const link = generateLink(phone);
             navigator.clipboard.writeText(link).then(() => {
                 showNotification('✅ Link disalin!');
             }).catch(() => {
-                // Fallback untuk browser lama
                 const textarea = document.createElement('textarea');
                 textarea.value = link;
                 document.body.appendChild(textarea);
@@ -342,11 +351,11 @@
                 document.body.removeChild(textarea);
                 showNotification('✅ Link disalin!');
             });
-        };
+        }
 
-        // JALANKAN LOAD CUSTOMERS SAAT HALAMAN DIBUKA
+        // JALANKAN REFRESH SAAT HALAMAN DIBUKA
         window.onload = function() {
-            loadCustomers();
+            refreshData();
         };
     </script>
 </body>
