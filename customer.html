@@ -46,6 +46,16 @@
             color: #666;
             margin-top: 5px;
         }
+        .first-order-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
         .status-badge {
             background: #f0f9ff;
             color: #0369a1;
@@ -123,6 +133,7 @@
             border: 2px solid #ef4444;
             text-align: center;
             padding: 40px;
+            border-radius: 30px;
         }
         .error-card h2 {
             color: #dc2626;
@@ -141,27 +152,54 @@
             margin-top: 25px;
             border-radius: 10px;
         }
+        .order-history {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container" id="app">
-        <!-- Konten akan diisi oleh JavaScript -->
+        <div class="card">
+            <div class="loading">
+                <h2>⏳ Memuat data...</h2>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Fungsi untuk mengambil parameter URL
+        // Fungsi untuk mengambil parameter dari URL
         function getUrlParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
         }
 
-        // Ambil data customer dari localStorage (via Admin)
+        // Fungsi untuk validasi token - HARUS SAMA PERSIS DENGAN DI ADMIN
+        function validateToken(phone, token) {
+            // Cara generate token harus sama persis dengan di admin
+            // Di admin: btoa(phone + 'jastip2024').substring(0, 15)
+            const validToken = btoa(phone + 'jastip2024').substring(0, 15);
+            console.log('Token dari URL:', token);
+            console.log('Token yang benar:', validToken);
+            return token === validToken;
+        }
+
+        // Fungsi ambil data customer dari localStorage
         function getCustomerData(phone) {
             const allCustomers = JSON.parse(localStorage.getItem('jastip_customers')) || {};
             return allCustomers[phone];
         }
 
-        // Validasi akses
+        // Fungsi utama untuk validasi akses
         function validateAccess() {
             const phone = getUrlParameter('id');
             const token = getUrlParameter('token');
@@ -173,21 +211,20 @@
                 app.innerHTML = `
                     <div class="card error-card">
                         <h2>🔒 Akses Ditolak</h2>
-                        <p>Link tidak valid atau sudah kadaluarsa.</p>
-                        <p style="margin-top: 20px; font-size: 0.9rem;">Hubungi admin untuk mendapatkan link yang benar.</p>
+                        <p>Link tidak lengkap.</p>
+                        <p style="margin-top: 20px;">Hubungi admin untuk mendapatkan link yang benar.</p>
                     </div>
                 `;
                 return;
             }
 
-            // Validasi token (sederhana)
-            const validToken = btoa(phone).substring(0,10);
-            if (token !== validToken) {
+            // Validasi token
+            if (!validateToken(phone, token)) {
                 app.innerHTML = `
                     <div class="card error-card">
                         <h2>🔒 Akses Ditolak</h2>
                         <p>Token tidak valid.</p>
-                        <p style="margin-top: 20px; font-size: 0.9rem;">Minta link baru ke admin.</p>
+                        <p style="margin-top: 20px;">Minta link baru ke admin.</p>
                     </div>
                 `;
                 return;
@@ -201,6 +238,7 @@
                     <div class="card error-card">
                         <h2>❌ Data Tidak Ditemukan</h2>
                         <p>Tidak ada pesanan untuk nomor ${phone}</p>
+                        <p style="margin-top: 20px;">Hubungi admin untuk informasi lebih lanjut.</p>
                     </div>
                 `;
                 return;
@@ -210,6 +248,7 @@
             displayCustomerData(customer);
         }
 
+        // Fungsi untuk menampilkan data customer
         function displayCustomerData(customer) {
             const app = document.getElementById('app');
             
@@ -217,10 +256,15 @@
             let totalItems = 0;
             let productsHtml = '';
             
+            // Hitung total dari semua produk
             customer.products.forEach((p, index) => {
                 const subtotal = p.qty * p.harga;
                 totalBelanja += subtotal;
                 totalItems += p.qty;
+                
+                // Tentukan warna status
+                const statusColor = p.status === 'READY' ? '#d4edda' : '#fff3cd';
+                const statusText = p.status === 'READY' ? '✅ READY' : '⏳ PREORDER';
                 
                 productsHtml += `
                     <tr>
@@ -228,19 +272,29 @@
                         <td>${p.qty}</td>
                         <td>Rp ${p.harga.toLocaleString()}</td>
                         <td>Rp ${subtotal.toLocaleString()}</td>
-                        <td><span style="background: ${p.status === 'READY' ? '#d4edda' : '#fff3cd'}; padding: 3px 8px; border-radius: 50px; font-size: 0.8rem;">${p.status}</span></td>
+                        <td><span style="background: ${statusColor}; padding: 3px 8px; border-radius: 50px; font-size: 0.8rem;">${statusText}</span></td>
                     </tr>
                 `;
             });
 
             const sisa = totalBelanja - customer.totalDp;
+            
+            // Cek apakah ini first order (dalam 24 jam terakhir)
+            const isFirstOrder = customer.firstOrder && 
+                (new Date() - new Date(customer.firstOrder)) < 24 * 60 * 60 * 1000;
 
+            // Hitung jumlah produk
+            const orderCount = customer.products.length;
+
+            // Tampilan utama
             app.innerHTML = `
                 <div class="card">
                     <div class="header">
                         <h1>📦 JASTIPBYCELINE</h1>
                         <p>Status Pesanan</p>
                     </div>
+                    
+                    ${isFirstOrder ? '<div class="first-order-badge">🆕 PESANAN PERTAMA</div>' : ''}
                     
                     <div class="status-badge">
                         ⏳ Pesanan Sedang Diproses
@@ -292,14 +346,18 @@
                         </div>
                     </div>
 
+                    <div class="order-history">
+                        📊 Total pesanan: ${orderCount} produk | Terakhir update: ${customer.lastUpdate}
+                    </div>
+
                     <div class="important-note">
                         <strong>⚠️ PENTING</strong><br>
                         Transfer BCA hanya atas nama <strong>CELINE PUTRI C</strong><br>
-                        <small>No. Rekening: 1234567890</small>
+                        <small>No. Rekening: 1234567890 a.n. CELINE PUTRI C</small>
                     </div>
 
                     <div class="footer">
-                        Terakhir update: ${customer.lastUpdate}
+                        Link ini khusus untuk ${customer.nama} - Simpan link ini untuk cek status berikutnya
                     </div>
                 </div>
             `;
