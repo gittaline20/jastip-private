@@ -151,12 +151,12 @@
                 <div class="format-info">
                     <strong>Format (pisah dengan spasi):</strong><br>
                     NoHP Nama Produk Qty Harga Status DP<br>
-                    Contoh: 81365245060 danny5060 sepatu 1 159000 dapat 50000
+                    Contoh: 81365245060 danny5060 tas 1 159000 dapat 50000
                 </div>
-                <textarea id="importData" rows="5">81365245060 danny5060 sepatu 1 159000 dapat 50000</textarea>
+                <textarea id="importData" rows="5">81365245060 danny5060 tas 1 159000 dapat 50000</textarea>
                 <div style="margin-top: 15px;">
                     <button onclick="importData()">✨ IMPORT KE DATABASE</button>
-                    <button onclick="refreshData()" style="background: #007bff;">🔄 REFRESH</button>
+                    <button onclick="refreshData()" class="refresh-btn">🔄 REFRESH</button>
                 </div>
             </div>
 
@@ -236,7 +236,7 @@
                         const currentProducts = existing.products || [];
                         currentProducts.push(product);
                         
-                        await supabase
+                        const { error } = await supabase
                             .from('customers')
                             .update({
                                 products: currentProducts,
@@ -244,9 +244,11 @@
                                 last_update: new Date().toLocaleString('id-ID')
                             })
                             .eq('phone', noHp);
+                        
+                        if (error) throw error;
                     } else {
                         // Insert baru
-                        await supabase
+                        const { error } = await supabase
                             .from('customers')
                             .insert([{
                                 phone: noHp,
@@ -256,6 +258,8 @@
                                 last_update: new Date().toLocaleString('id-ID'),
                                 first_order: new Date().toISOString()
                             }]);
+                        
+                        if (error) throw error;
                     }
                     imported++;
                 } catch (e) {
