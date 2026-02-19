@@ -86,7 +86,7 @@
         }
         .customers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 20px;
             margin-top: 30px;
         }
@@ -95,6 +95,7 @@
             border-radius: 15px;
             padding: 20px;
             border: 1px solid #dee2e6;
+            position: relative;
         }
         .customer-header {
             display: flex;
@@ -112,6 +113,16 @@
         .customer-phone {
             color: #667eea;
             font-weight: 600;
+        }
+        .new-customer-badge {
+            background: #28a745;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 10px;
+            text-transform: uppercase;
         }
         .private-link {
             background: #e9ecef;
@@ -156,9 +167,28 @@
             animation: slideIn 0.3s;
             z-index: 1000;
         }
+        .notification.new-customer {
+            background: #17a2b8;
+        }
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
+        }
+        .first-order-info {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        .existing-order-info {
+            background: #e9ecef;
+            border-left: 4px solid #6c757d;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -166,7 +196,7 @@
     <div class="container">
         <div class="header">
             <h1>📦 JASTIPBYCELINE ADMIN</h1>
-            <p>🔐 Private link system · Hanya yang punya link bisa akses</p>
+            <p>🔐 Private link system · Link tetap untuk customer yang sama</p>
         </div>
         
         <div class="main-content">
@@ -185,8 +215,11 @@
             <div id="customersList" class="customers-grid"></div>
             
             <div class="warning">
-                ⚠️ <strong>PENTING:</strong> Copy link private dan bagikan ke customer masing-masing. 
-                Hanya yang punya link ini yang bisa lihat status pesanan!
+                ⚠️ <strong>PENTING:</strong> 
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li>🟢 <strong>Customer baru:</strong> Akan otomatis dibuatkan link baru</li>
+                    <li>🔵 <strong>Customer lama:</strong> Link tetap sama, data terupdate</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -195,19 +228,24 @@
         // Data storage
         let customers = JSON.parse(localStorage.getItem('jastip_customers')) || {};
 
-        function showNotification(message, isError = false) {
+        function showNotification(message, isNew = false) {
             const notif = document.createElement('div');
-            notif.className = 'notification';
-            notif.style.background = isError ? '#dc3545' : '#28a745';
+            notif.className = `notification ${isNew ? 'new-customer' : ''}`;
             notif.textContent = message;
             document.body.appendChild(notif);
             setTimeout(() => notif.remove(), 3000);
         }
 
         function generatePrivateLink(phone) {
-            // Ini akan diganti dengan domain asli setelah dihosting
             const baseUrl = window.location.origin;
-            return `${baseUrl}/customer.html?id=${phone}&token=${btoa(phone).substring(0,10)}`;
+            // Token dibuat dari nomor HP + salt sederhana
+            const token = btoa(phone + 'jastip2024').substring(0, 15);
+            return `${baseUrl}/customer.html?id=${phone}&token=${token}`;
+        }
+
+        // Fungsi untuk cek apakah customer baru
+        function isNewCustomer(phone) {
+            return !customers[phone];
         }
 
         function parseLine(line) {
@@ -248,25 +286,38 @@
         function importData() {
             const text = document.getElementById('importData').value;
             if (!text) {
-                showNotification('Masukkan data dulu!', true);
+                showNotification('Masukkan data dulu!', false);
                 return;
             }
 
             const lines = text.split('\n');
             let imported = 0;
             let newCustomers = {};
+            let newCustomerPhones = [];
+            let existingCustomerPhones = [];
 
             lines.forEach(line => {
                 const data = parseLine(line);
                 if (data) {
+                    // Cek apakah customer baru
+                    const isNew = isNewCustomer(data.noHp);
+                    
                     if (!newCustomers[data.noHp]) {
                         newCustomers[data.noHp] = {
                             noHp: data.noHp,
                             nama: data.nama,
                             products: [],
                             totalDp: 0,
-                            lastUpdate: new Date().toLocaleString('id-ID')
+                            lastUpdate: new Date().toLocaleString('id-ID'),
+                            firstOrder: isNew ? new Date().toISOString() : customers[data.noHp]?.firstOrder,
+                            isNewCustomer: isNew
                         };
+                        
+                        if (isNew) {
+                            newCustomerPhones.push(data.noHp);
+                        } else {
+                            existingCustomerPhones.push(data.noHp);
+                        }
                     }
                     
                     newCustomers[data.noHp].products.push({
@@ -284,7 +335,7 @@
             // Merge dengan data lama
             Object.keys(newCustomers).forEach(phone => {
                 if (customers[phone]) {
-                    // Update existing customer
+                    // Update existing customer (link tetap sama)
                     customers[phone].products = [
                         ...customers[phone].products,
                         ...newCustomers[phone].products
@@ -292,13 +343,21 @@
                     customers[phone].totalDp += newCustomers[phone].totalDp;
                     customers[phone].lastUpdate = new Date().toLocaleString('id-ID');
                 } else {
-                    // New customer
+                    // New customer (link baru)
                     customers[phone] = newCustomers[phone];
                 }
             });
 
             localStorage.setItem('jastip_customers', JSON.stringify(customers));
-            showNotification(`✅ Berhasil import ${imported} produk`);
+            
+            // Notifikasi
+            if (newCustomerPhones.length > 0) {
+                showNotification(`✅ ${newCustomerPhones.length} CUSTOMER BARU dengan link baru!`, true);
+            }
+            if (existingCustomerPhones.length > 0) {
+                showNotification(`🔄 ${existingCustomerPhones.length} customer lama (link tetap)`, false);
+            }
+            
             document.getElementById('importData').value = '';
             renderCustomers();
         }
@@ -307,7 +366,12 @@
             const container = document.getElementById('customersList');
             container.innerHTML = '';
 
-            Object.values(customers).forEach(customer => {
+            // Sort by firstOrder (newest first)
+            const sortedCustomers = Object.values(customers).sort((a, b) => {
+                return new Date(b.firstOrder || 0) - new Date(a.firstOrder || 0);
+            });
+
+            sortedCustomers.forEach(customer => {
                 let totalBelanja = 0;
                 let totalItems = 0;
                 
@@ -318,16 +382,42 @@
 
                 const link = generatePrivateLink(customer.noHp);
                 const sisa = totalBelanja - customer.totalDp;
+                
+                // Cek apakah customer baru (order pertama dalam 5 menit terakhir)
+                const isNew = customer.firstOrder && 
+                    (new Date() - new Date(customer.firstOrder)) < 5 * 60 * 1000;
 
                 const card = document.createElement('div');
                 card.className = 'customer-card';
+                
+                let badgeHtml = '';
+                if (isNew) {
+                    badgeHtml = '<span class="new-customer-badge">🆕 CUSTOMER BARU</span>';
+                }
+                
+                let orderInfoHtml = '';
+                if (isNew) {
+                    orderInfoHtml = `
+                        <div class="first-order-info">
+                            🆕 <strong>First time order</strong> - Link baru dibuat otomatis
+                        </div>
+                    `;
+                } else {
+                    orderInfoHtml = `
+                        <div class="existing-order-info">
+                            🔄 <strong>Repeat order</strong> - Link tetap sama, data terupdate
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
                     <div class="customer-header">
-                        <span class="customer-name">${customer.nama}</span>
+                        <span class="customer-name">${customer.nama} ${badgeHtml}</span>
                         <span class="customer-phone">${customer.noHp}</span>
                     </div>
                     <div class="private-link" id="link-${customer.noHp}">${link}</div>
                     <button class="copy-btn" onclick="copyLink('${customer.noHp}')">📋 COPY PRIVATE LINK</button>
+                    ${orderInfoHtml}
                     <div class="stats">
                         <span>📦 ${totalItems} item</span>
                         <span>💰 Rp ${totalBelanja.toLocaleString()}</span>
