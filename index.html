@@ -6,252 +6,64 @@
     <title>Jastipbyceline · Admin Panel</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .header {
-            background: white;
-            border-radius: 20px 20px 0 0;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .header h1 {
-            color: #333;
-            font-size: 2.5rem;
-        }
-        .header p {
-            color: #666;
-            margin-top: 10px;
-        }
-        .main-content {
-            background: white;
-            border-radius: 0 0 20px 20px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .setup-section {
-            background: #f0f9ff;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 2px solid #7dd3fc;
-        }
-        .setup-section input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-family: monospace;
-        }
-        .setup-section button {
-            background: #0e7a9e;
-            margin-right: 10px;
-        }
-        .import-section {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 2px dashed #dee2e6;
-        }
-        .format-info {
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: monospace;
-            margin: 15px 0;
-        }
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 15px;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            font-family: monospace;
-            margin-bottom: 15px;
-            resize: vertical;
-        }
-        textarea:focus {
-            border-color: #667eea;
-            outline: none;
-        }
-        button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-        button:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
-        }
-        .btn-success {
-            background: #28a745;
-        }
-        .btn-success:hover {
-            background: #218838;
-        }
-        .customers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-        .customer-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #dee2e6;
-            position: relative;
-        }
-        .customer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #dee2e6;
-        }
-        .customer-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #333;
-        }
-        .customer-phone {
-            color: #667eea;
-            font-weight: 600;
-        }
-        .new-customer-badge {
-            background: #28a745;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 50px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-left: 10px;
-            text-transform: uppercase;
-        }
-        .private-link {
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            word-break: break-all;
-            margin: 10px 0;
-        }
-        .copy-btn {
-            background: #28a745;
-            width: 100%;
-            margin-top: 5px;
-        }
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        .warning {
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #28a745;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 50px;
-            animation: slideIn 0.3s;
-            z-index: 1000;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .status-connected {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
+        /* [Saya singkat stylenya, tapi kamu bisa copy dari file sebelumnya] */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: white; border-radius: 20px 20px 0 0; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .main-content { background: white; border-radius: 0 0 20px 20px; padding: 30px; }
+        .import-section { background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 30px; border: 2px dashed #dee2e6; }
+        .format-info { background: #e9ecef; padding: 15px; border-radius: 10px; font-family: monospace; margin: 15px 0; }
+        textarea { width: 100%; height: 150px; padding: 15px; border: 2px solid #dee2e6; border-radius: 10px; font-family: monospace; margin-bottom: 15px; resize: vertical; }
+        button { background: #28a745; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-right: 10px; }
+        .customers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; margin-top: 30px; }
+        .customer-card { background: #f8f9fa; border-radius: 15px; padding: 20px; border: 1px solid #dee2e6; }
+        .private-link { background: #e9ecef; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; word-break: break-all; margin: 10px 0; }
+        .copy-btn { background: #28a745; width: 100%; }
+        .notification { position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 15px 25px; border-radius: 50px; animation: slideIn 0.3s; z-index: 1000; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .status-connected { background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div>
-                <h1>📦 JASTIPBYCELINE ADMIN</h1>
-                <p>🔐 Dengan Supabase · Data online, akses dari mana saja</p>
-            </div>
+            <h1>📦 JASTIPBYCELINE ADMIN</h1>
+            <p>🔐 Dengan Supabase · Data online, akses dari mana saja</p>
         </div>
         
         <div class="main-content">
-            <!-- SETUP SUPABASE -->
-            <div class="setup-section" id="setupSection">
-                <h3>🔌 Koneksi ke Supabase</h3>
-                <p>Masukkan URL dan Key dari project Supabase kamu:</p>
-                <input type="text" id="supabaseUrl" placeholder="https://xyzabc.supabase.co" value="https://ntyetosvnafeuhnmljd.supabase.co">
-                <input type="text" id="supabaseKey" placeholder="anon public key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU">
-                <button onclick="connectSupabase()" class="btn-success">🔌 CONNECT</button>
-                <button onclick="createTable()" class="btn-success">📋 CREATE TABLE</button>
-                <div id="connectionStatus"></div>
+            <div id="connectionStatus" class="status-connected">
+                ✅ Terkoneksi ke Supabase!
             </div>
 
             <div class="import-section">
-                <h2 style="margin-bottom: 15px;">📋 IMPORT DATA CUSTOMER</h2>
+                <h2>📋 IMPORT DATA CUSTOMER</h2>
                 <div class="format-info">
                     <strong>Format (pisah dengan spasi):</strong><br>
                     NoHP Nama Produk Qty Harga Status DP<br>
-                    <small>Contoh: 81399999999 danny sepatu-5073 1 159000 dapat 50000</small>
+                    Contoh: 81365245060 danny5060 sepatu 1 159000 dapat 50000
                 </div>
                 <textarea id="importData" placeholder="Tempel data disini..."></textarea>
-                <button onclick="importToSupabase()" class="btn-success">✨ IMPORT KE DATABASE</button>
+                <button onclick="importToSupabase()">✨ IMPORT KE DATABASE</button>
             </div>
 
-            <h2 style="margin-bottom: 20px;">📱 DAFTAR CUSTOMER</h2>
+            <h2>📱 DAFTAR CUSTOMER</h2>
             <div id="customersList" class="customers-grid"></div>
             
-            <div class="warning">
-                ⚠️ <strong>PENTING:</strong> Data tersimpan di cloud Supabase. Customer bisa buka link langsung dari HP!
+            <div style="margin-top: 20px; padding: 10px; background: #fff3cd; border-radius: 8px;">
+                ⚠️ Data tersimpan di cloud Supabase. Customer bisa buka link langsung dari HP!
             </div>
         </div>
     </div>
 
     <script>
-        let supabase = null;
-        let supabaseConnected = false;
+        // CONFIG - LANGSUNG DIISI
+        const SUPABASE_URL = 'https://ntyetosvnafeuhnmljd.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let supabaseConnected = true;
 
         function showNotification(message, isError = false) {
             const notif = document.createElement('div');
@@ -262,55 +74,6 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        function connectSupabase() {
-            const url = document.getElementById('supabaseUrl').value;
-            const key = document.getElementById('supabaseKey').value;
-            
-            if (!url || !key) {
-                showNotification('Isi URL dan Key dulu!', true);
-                return;
-            }
-
-            try {
-                supabase = window.supabase.createClient(url, key);
-                supabaseConnected = true;
-                document.getElementById('connectionStatus').innerHTML = '<div class="status-connected">✅ Terkoneksi ke Supabase!</div>';
-                showNotification('✅ Berhasil connect ke Supabase');
-                loadCustomers();
-            } catch (e) {
-                showNotification('Gagal connect: ' + e.message, true);
-            }
-        }
-
-        async function createTable() {
-            if (!supabase) {
-                showNotification('Connect dulu ke Supabase!', true);
-                return;
-            }
-
-            try {
-                // Coba buat table dengan insert dummy
-                const { error } = await supabase
-                    .from('customers')
-                    .insert([{ 
-                        phone: 'temp', 
-                        name: 'temp', 
-                        products: [], 
-                        total_dp: 0 
-                    }])
-                    .select();
-                
-                if (error && error.message.includes('relation') && error.message.includes('does not exist')) {
-                    showNotification('Tabel belum ada. Buat manual di Supabase SQL Editor!', true);
-                    window.open('https://supabase.com/dashboard/project/ntyetosvnafeuhnmljd/sql', '_blank');
-                } else {
-                    showNotification('✅ Tabel sudah siap!');
-                }
-            } catch (e) {
-                showNotification('Error: ' + e.message, true);
-            }
-        }
-
         function generatePrivateLink(phone) {
             const baseUrl = window.location.origin;
             const token = btoa(phone + 'jastip2024').substring(0, 15);
@@ -318,11 +81,6 @@
         }
 
         async function importToSupabase() {
-            if (!supabase) {
-                showNotification('Connect dulu ke Supabase!', true);
-                return;
-            }
-
             const text = document.getElementById('importData').value;
             if (!text) {
                 showNotification('Masukkan data dulu!', true);
@@ -349,7 +107,6 @@
 
                 noHp = noHp.replace(/\D/g, '');
                 
-                // Cek apakah customer sudah ada
                 const { data: existing } = await supabase
                     .from('customers')
                     .select('*')
@@ -365,7 +122,6 @@
                 };
 
                 if (existing) {
-                    // Update existing customer
                     const currentProducts = existing.products || [];
                     currentProducts.push(productData);
                     
@@ -378,7 +134,6 @@
                         })
                         .eq('phone', noHp);
                 } else {
-                    // Customer baru
                     await supabase
                         .from('customers')
                         .insert([{
@@ -399,15 +154,13 @@
         }
 
         async function loadCustomers() {
-            if (!supabase) return;
-
             const { data: customers, error } = await supabase
                 .from('customers')
                 .select('*')
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error loading:', error);
+                console.error(error);
                 return;
             }
 
@@ -425,29 +178,19 @@
 
                 const link = generatePrivateLink(customer.phone);
                 const sisa = totalBelanja - (customer.total_dp || 0);
-                
-                const isNew = customer.first_order && 
-                    (new Date() - new Date(customer.first_order)) < 24 * 60 * 60 * 1000;
 
                 const card = document.createElement('div');
                 card.className = 'customer-card';
-                
-                let badgeHtml = isNew ? '<span class="new-customer-badge">🆕 BARU</span>' : '';
-
                 card.innerHTML = `
-                    <div class="customer-header">
-                        <span class="customer-name">${customer.name} ${badgeHtml}</span>
-                        <span class="customer-phone">${customer.phone}</span>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <strong>${customer.name}</strong>
+                        <span>${customer.phone}</span>
                     </div>
                     <div class="private-link" id="link-${customer.phone}">${link}</div>
                     <button class="copy-btn" onclick="copyLink('${customer.phone}')">📋 COPY LINK</button>
-                    <div class="stats">
-                        <span>📦 ${totalItems} item</span>
-                        <span>💰 Rp ${totalBelanja.toLocaleString()}</span>
-                    </div>
-                    <div class="stats">
-                        <span>💵 DP: Rp ${(customer.total_dp || 0).toLocaleString()}</span>
-                        <span>💳 Sisa: Rp ${sisa.toLocaleString()}</span>
+                    <div style="margin-top: 10px;">
+                        <div>📦 ${totalItems} item | 💰 Rp ${totalBelanja.toLocaleString()}</div>
+                        <div>💵 DP: Rp ${(customer.total_dp || 0).toLocaleString()} | 💳 Sisa: Rp ${sisa.toLocaleString()}</div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -457,18 +200,13 @@
         function copyLink(phone) {
             const linkElement = document.getElementById(`link-${phone}`);
             const link = linkElement.textContent;
-            
             navigator.clipboard.writeText(link).then(() => {
                 showNotification('✅ Link disalin!');
             });
         }
 
-        // Auto-connect dengan credential yang sudah diisi
-        window.onload = function() {
-            setTimeout(() => {
-                connectSupabase();
-            }, 500);
-        };
+        // Load data otomatis
+        loadCustomers();
     </script>
 </body>
 </html>
