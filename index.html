@@ -151,9 +151,9 @@
                 <div class="format-info">
                     <strong>Format (pisah dengan spasi):</strong><br>
                     NoHP Nama Produk Qty Harga Status DP<br>
-                    Contoh: 81234567890 budi sepatu 2 200000 ready 100000
+                    Contoh: 81365245060 danny5060 sepatu 1 159000 dapat 50000
                 </div>
-                <textarea id="importData" rows="5">81365245060 danny5060 sepatu 1 159000 dapat 50000</textarea>
+                <textarea id="importData" placeholder="Tempel data disini...">81365245060 danny5060 sepatu 1 159000 dapat 50000</textarea>
                 <div style="margin-top: 10px;">
                     <button onclick="importData()">✨ IMPORT KE DATABASE</button>
                     <button onclick="loadCustomers()" class="refresh-btn">🔄 REFRESH</button>
@@ -168,12 +168,12 @@
     </div>
 
     <script>
-        // CONFIG SUPABASE - HANYA SEKALI DEKLARASI
+        // KONFIGURASI SUPABASE - PASTI SUDAH BENAR
         const SUPABASE_URL = 'https://ntyetosvnafeuhnmljd.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Fungsi notifikasi
+        // FUNGSI NOTIFIKASI
         function showNotification(message, isError = false) {
             const notif = document.createElement('div');
             notif.className = 'notification';
@@ -183,13 +183,13 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        // Fungsi generate link
+        // FUNGSI GENERATE LINK
         function generateLink(phone) {
             const token = btoa(phone + 'jastip2024').substring(0, 15);
             return window.location.origin + '/customer.html?id=' + phone + '&token=' + token;
         }
 
-        // Fungsi import data
+        // FUNGSI IMPORT DATA
         window.importData = async function() {
             const text = document.getElementById('importData').value;
             if (!text) {
@@ -205,12 +205,15 @@
                 if (!line) continue;
                 
                 const parts = line.split(/\s+/);
-                if (parts.length < 6) continue;
+                if (parts.length < 6) {
+                    console.log('Skipping line (kurang kolom):', line);
+                    continue;
+                }
                 
                 const [noHp, nama, produk, qty, harga, status, dp = 0] = parts;
                 
                 try {
-                    // Cek existing
+                    // Cek apakah customer sudah ada
                     const { data: existing } = await supabase
                         .from('customers')
                         .select('*')
@@ -226,7 +229,7 @@
                     };
                     
                     if (existing) {
-                        // Update
+                        // Update existing customer
                         const currentProducts = existing.products || [];
                         currentProducts.push(product);
                         
@@ -239,7 +242,7 @@
                             })
                             .eq('phone', noHp);
                     } else {
-                        // Insert baru
+                        // Insert new customer
                         await supabase
                             .from('customers')
                             .insert([{
@@ -262,7 +265,7 @@
             loadCustomers();
         };
 
-        // Fungsi load customers
+        // FUNGSI LOAD CUSTOMERS
         window.loadCustomers = async function() {
             const container = document.getElementById('customersList');
             container.innerHTML = '<p style="text-align: center; color: #666;">Memuat data...</p>';
@@ -274,6 +277,7 @@
                     .order('created_at', { ascending: false });
                 
                 if (error) {
+                    console.error('Error:', error);
                     container.innerHTML = '<p style="text-align: center; color: red;">Error: ' + error.message + '</p>';
                     return;
                 }
@@ -318,16 +322,18 @@
                     container.appendChild(card);
                 });
             } catch (e) {
+                console.error('Fatal error:', e);
                 container.innerHTML = '<p style="text-align: center; color: red;">Error: ' + e.message + '</p>';
             }
         };
 
-        // Fungsi copy link
+        // FUNGSI COPY LINK
         window.copyLink = function(phone) {
             const link = generateLink(phone);
             navigator.clipboard.writeText(link).then(() => {
                 showNotification('✅ Link disalin!');
             }).catch(() => {
+                // Fallback untuk browser lama
                 const textarea = document.createElement('textarea');
                 textarea.value = link;
                 document.body.appendChild(textarea);
@@ -338,7 +344,7 @@
             });
         };
 
-        // Load data saat halaman dimuat
+        // JALANKAN LOAD CUSTOMERS SAAT HALAMAN DIBUKA
         window.onload = function() {
             loadCustomers();
         };
