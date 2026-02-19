@@ -1,37 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Jastip Admin</title>
+    <title>Jastip Test</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <h1>📦 JASTIP ADMIN</h1>
+    <h1>📦 JASTIP TEST</h1>
     
-    <textarea id="data" rows="4" style="width:100%;">81365245060 danny5060 tas 1 159000 dapat 50000</textarea>
+    <textarea id="data" rows="4" cols="50" style="width:100%;">81365245060 danny5060 tas 1 159000 dapat 50000</textarea>
     <br><br>
-    <button onclick="importData()" style="padding:10px 20px;">IMPORT</button>
-    <button onclick="loadData()" style="padding:10px 20px;">REFRESH</button>
-    <div id="error" style="color:red; margin:10px 0;"></div>
+    <button onclick="testImport()" style="padding:10px 20px;">TEST IMPORT</button>
+    <button onclick="testLoad()" style="padding:10px 20px;">TEST LOAD</button>
     
-    <h2>Data Customer:</h2>
-    <div id="result"></div>
+    <div id="log" style="margin-top:20px; background:#f0f0f0; padding:10px;"></div>
 
     <script>
-        const SUPABASE_URL = 'https://ntyetosvnafeuhnmljd.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        function log(msg) {
+            document.getElementById('log').innerHTML += '<div>' + msg + '</div>';
+            console.log(msg);
+        }
 
-        async function importData() {
+        const supabase = window.supabase.createClient(
+            'https://ntyetosvnafeuhnmljd.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU'
+        );
+        log('✅ Supabase initialized');
+
+        async function testImport() {
+            log('🟢 Tombol IMPORT diklik');
+            
             const text = document.getElementById('data').value;
+            log('📝 Data: ' + text);
+            
             const parts = text.trim().split(/\s+/);
+            log('🔍 Parts: ' + JSON.stringify(parts));
             
             if (parts.length < 6) {
-                document.getElementById('error').innerText = 'Format salah! Minimal 6 kolom';
+                log('❌ Format salah!');
                 return;
             }
             
             const [noHp, nama, produk, qty, harga, status, dp=0] = parts;
+            log('📊 Parsed: ' + JSON.stringify({noHp, nama, produk, qty, harga, status, dp}));
             
+            log('⏳ Mencoba insert ke Supabase...');
             const { data, error } = await supabase.from('customers').insert([{
                 phone: noHp,
                 name: nama,
@@ -47,50 +59,22 @@
             }]);
             
             if (error) {
-                document.getElementById('error').innerHTML = 'ERROR: ' + error.message;
+                log('❌ ERROR: ' + JSON.stringify(error));
             } else {
-                document.getElementById('error').innerHTML = '✅ SUKSES!';
-                document.getElementById('data').value = '';
-                loadData();
+                log('✅ SUKSES! Data masuk');
             }
         }
 
-        async function loadData() {
+        async function testLoad() {
+            log('🟢 Tombol LOAD diklik');
             const { data, error } = await supabase.from('customers').select('*');
             
             if (error) {
-                document.getElementById('result').innerHTML = 'Error: ' + error.message;
-                return;
+                log('❌ ERROR: ' + JSON.stringify(error));
+            } else {
+                log('📦 Data: ' + JSON.stringify(data, null, 2));
             }
-            
-            if (!data || data.length === 0) {
-                document.getElementById('result').innerHTML = 'Belum ada data';
-                return;
-            }
-            
-            let html = '';
-            data.forEach(c => {
-                const token = btoa(c.phone + 'jastip2024').substring(0,15);
-                const link = window.location.origin + '/customer.html?id=' + c.phone + '&token=' + token;
-                
-                html += `
-                    <div style="border:1px solid #ccc; padding:10px; margin:10px 0;">
-                        <div><strong>${c.name}</strong> - ${c.phone}</div>
-                        <div style="background:#f0f0f0; padding:5px; font-family:monospace;">${link}</div>
-                        <button onclick="copyLink('${c.phone}')" style="margin-top:5px;">COPY LINK</button>
-                    </div>
-                `;
-            });
-            document.getElementById('result').innerHTML = html;
         }
-
-        function copyLink(phone) {
-            const token = btoa(phone + 'jastip2024').substring(0,15);
-            const link = window.location.origin + '/customer.html?id=' + phone + '&token=' + token;
-            navigator.clipboard.writeText(link).then(() => alert('Link disalin!'));
-        }
-
-        loadData();
     </script>
 </body>
 </html>
