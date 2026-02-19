@@ -17,7 +17,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         .header {
@@ -25,6 +25,9 @@
             border-radius: 20px 20px 0 0;
             padding: 30px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .header h1 {
             color: #333;
@@ -33,6 +36,10 @@
         .header p {
             color: #666;
             margin-top: 10px;
+        }
+        .backup-buttons {
+            display: flex;
+            gap: 10px;
         }
         .main-content {
             background: white;
@@ -78,11 +85,32 @@
             font-weight: 600;
             cursor: pointer;
             transition: 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         button:hover {
             background: #764ba2;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
         }
         .customers-grid {
             display: grid;
@@ -138,9 +166,6 @@
             width: 100%;
             margin-top: 5px;
         }
-        .copy-btn:hover {
-            background: #218838;
-        }
         .stats {
             display: flex;
             justify-content: space-between;
@@ -190,25 +215,58 @@
             border-radius: 5px;
             font-size: 0.9rem;
         }
+        .backup-panel {
+            background: #e3f2fd;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #90caf9;
+        }
+        .backup-panel h3 {
+            color: #0d47a1;
+            margin-bottom: 15px;
+        }
+        .file-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📦 JASTIPBYCELINE ADMIN</h1>
-            <p>🔐 Private link system · Link tetap untuk customer yang sama</p>
+            <div>
+                <h1>📦 JASTIPBYCELINE ADMIN</h1>
+                <p>🔐 Private link system · Link tetap untuk customer yang sama</p>
+            </div>
+            <div class="backup-buttons">
+                <button class="btn-success" onclick="exportData()">💾 EXPORT DATA</button>
+                <button class="btn-warning" onclick="document.getElementById('fileInput').click()">📂 IMPORT JSON</button>
+                <button class="btn-danger" onclick="clearAllData()">🗑️ CLEAR ALL</button>
+            </div>
         </div>
         
         <div class="main-content">
+            <div class="backup-panel">
+                <h3>📋 BACKUP & RESTORE DATA</h3>
+                <p style="margin-bottom: 15px;">Export data ke file JSON untuk dipindah ke device lain atau sebagai backup.</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-success" onclick="exportData()">💾 EXPORT DATA (JSON)</button>
+                    <button class="btn-warning" onclick="document.getElementById('fileInput').click()">📂 RESTORE FROM JSON</button>
+                    <span style="color: #666; margin-left: 10px;">Data tersimpan: <span id="dataCount">0</span> customer</span>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".json" onchange="importFromFile(event)">
+            </div>
+
             <div class="import-section">
-                <h2 style="margin-bottom: 15px;">📋 IMPORT DATA CUSTOMER</h2>
+                <h2 style="margin-bottom: 15px;">📋 IMPORT DATA CUSTOMER (CSV/Text)</h2>
                 <div class="format-info">
                     <strong>Format (pisah dengan spasi atau |):</strong><br>
                     NoHP Nama Produk Qty Harga Status DP<br>
-                    <small>Contoh: 81399999999 danny sepatu 1 149000 READY 50000</small>
+                    <small>Contoh: 81399999999 danny celana 1 159000 dapat 50000</small>
                 </div>
                 <textarea id="importData" placeholder="Tempel data disini..."></textarea>
                 <button onclick="importData()">✨ IMPORT DATA</button>
+                <button class="btn-warning" onclick="clearImportField()">🗑️ Clear</button>
             </div>
 
             <h2 style="margin-bottom: 20px;">📱 DAFTAR CUSTOMER & LINK PRIVATE</h2>
@@ -219,6 +277,7 @@
                 <ul style="margin-left: 20px; margin-top: 5px;">
                     <li>🟢 <strong>Customer baru:</strong> Akan otomatis dibuatkan link baru</li>
                     <li>🔵 <strong>Customer lama:</strong> Link tetap sama, data terupdate</li>
+                    <li>💾 <strong>Backup data:</strong> Export JSON sebelum ganti browser/device</li>
                 </ul>
             </div>
         </div>
@@ -227,6 +286,10 @@
     <script>
         // Data storage
         let customers = JSON.parse(localStorage.getItem('jastip_customers')) || {};
+
+        function updateDataCount() {
+            document.getElementById('dataCount').innerText = Object.keys(customers).length;
+        }
 
         function showNotification(message, isNew = false) {
             const notif = document.createElement('div');
@@ -238,12 +301,10 @@
 
         function generatePrivateLink(phone) {
             const baseUrl = window.location.origin;
-            // Token dibuat dari nomor HP + salt sederhana
             const token = btoa(phone + 'jastip2024').substring(0, 15);
             return `${baseUrl}/customer.html?id=${phone}&token=${token}`;
         }
 
-        // Fungsi untuk cek apakah customer baru
         function isNewCustomer(phone) {
             return !customers[phone];
         }
@@ -269,7 +330,6 @@
                 [noHp, nama, produk, qty, harga, status] = parts;
             }
 
-            // Bersihkan nomor HP (ambil angka saja)
             noHp = noHp.replace(/\D/g, '');
             
             return {
@@ -299,7 +359,6 @@
             lines.forEach(line => {
                 const data = parseLine(line);
                 if (data) {
-                    // Cek apakah customer baru
                     const isNew = isNewCustomer(data.noHp);
                     
                     if (!newCustomers[data.noHp]) {
@@ -332,10 +391,8 @@
                 }
             });
 
-            // Merge dengan data lama
             Object.keys(newCustomers).forEach(phone => {
                 if (customers[phone]) {
-                    // Update existing customer (link tetap sama)
                     customers[phone].products = [
                         ...customers[phone].products,
                         ...newCustomers[phone].products
@@ -343,14 +400,12 @@
                     customers[phone].totalDp += newCustomers[phone].totalDp;
                     customers[phone].lastUpdate = new Date().toLocaleString('id-ID');
                 } else {
-                    // New customer (link baru)
                     customers[phone] = newCustomers[phone];
                 }
             });
 
             localStorage.setItem('jastip_customers', JSON.stringify(customers));
             
-            // Notifikasi
             if (newCustomerPhones.length > 0) {
                 showNotification(`✅ ${newCustomerPhones.length} CUSTOMER BARU dengan link baru!`, true);
             }
@@ -360,13 +415,64 @@
             
             document.getElementById('importData').value = '';
             renderCustomers();
+            updateDataCount();
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(customers, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `jastip-backup-${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification(`✅ Data ${Object.keys(customers).length} customer diexport!`);
+        }
+
+        function importFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    customers = importedData;
+                    localStorage.setItem('jastip_customers', JSON.stringify(customers));
+                    renderCustomers();
+                    updateDataCount();
+                    showNotification(`✅ Berhasil import ${Object.keys(customers).length} customer dari file!`);
+                } catch (error) {
+                    showNotification('❌ File JSON tidak valid!', false);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+
+        function clearAllData() {
+            if (confirm('Hapus SEMUA data customer? Data tidak bisa dikembalikan!')) {
+                customers = {};
+                localStorage.removeItem('jastip_customers');
+                renderCustomers();
+                updateDataCount();
+                showNotification('🗑️ Semua data dihapus!');
+            }
+        }
+
+        function clearImportField() {
+            document.getElementById('importData').value = '';
         }
 
         function renderCustomers() {
             const container = document.getElementById('customersList');
             container.innerHTML = '';
 
-            // Sort by firstOrder (newest first)
             const sortedCustomers = Object.values(customers).sort((a, b) => {
                 return new Date(b.firstOrder || 0) - new Date(a.firstOrder || 0);
             });
@@ -383,9 +489,8 @@
                 const link = generatePrivateLink(customer.noHp);
                 const sisa = totalBelanja - customer.totalDp;
                 
-                // Cek apakah customer baru (order pertama dalam 5 menit terakhir)
                 const isNew = customer.firstOrder && 
-                    (new Date() - new Date(customer.firstOrder)) < 5 * 60 * 1000;
+                    (new Date() - new Date(customer.firstOrder)) < 24 * 60 * 60 * 1000;
 
                 const card = document.createElement('div');
                 card.className = 'customer-card';
@@ -432,6 +537,7 @@
                 `;
                 container.appendChild(card);
             });
+            updateDataCount();
         }
 
         function copyLink(phone) {
@@ -441,7 +547,6 @@
             navigator.clipboard.writeText(link).then(() => {
                 showNotification('✅ Link private disalin!');
             }).catch(() => {
-                // Fallback
                 const textarea = document.createElement('textarea');
                 textarea.value = link;
                 document.body.appendChild(textarea);
@@ -454,6 +559,7 @@
 
         // Initial render
         renderCustomers();
+        updateDataCount();
     </script>
 </body>
 </html>
