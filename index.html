@@ -1,80 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Jastip Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jastip · Admin Final</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        textarea { width: 100%; height: 120px; padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-family: monospace; margin: 15px 0; }
+        button { background: #28a745; color: white; border: none; padding: 12px 30px; border-radius: 50px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-right: 10px; }
+        button.refresh { background: #007bff; }
+        .card { background: #f8f9fa; border-radius: 15px; padding: 20px; margin: 20px 0; border: 1px solid #dee2e6; }
+        .link { background: #e9ecef; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; word-break: break-all; margin: 10px 0; }
+        .copy-btn { background: #28a745; width: 100%; padding: 8px; border-radius: 5px; }
+        .log { background: #333; color: #0f0; padding: 10px; border-radius: 5px; font-family: monospace; height: 150px; overflow-y: scroll; font-size: 0.8rem; }
+    </style>
 </head>
 <body>
-    <h1>📦 JASTIP TEST</h1>
-    
-    <textarea id="data" rows="4" cols="50" style="width:100%;">81365245060 danny5060 tas 1 159000 dapat 50000</textarea>
-    <br><br>
-    <button onclick="testImport()" style="padding:10px 20px;">TEST IMPORT</button>
-    <button onclick="testLoad()" style="padding:10px 20px;">TEST LOAD</button>
-    
-    <div id="log" style="margin-top:20px; background:#f0f0f0; padding:10px;"></div>
+    <div class="container">
+        <h1>📦 JASTIP ADMIN FINAL</h1>
+        <p>Status: <span id="status">Connecting...</span></p>
+
+        <textarea id="importData">81365245060 danny5060 tas 1 159000 dapat 50000</textarea>
+        <button onclick="handleImport()">✨ IMPORT</button>  <!-- ← UDAH DIPERBAIKI -->
+        <button onclick="loadData()" class="refresh">🔄 REFRESH</button>
+
+        <h3>📋 Data Customer:</h3>
+        <div id="customerList"></div>
+
+        <h3>📜 System Log:</h3>
+        <div id="systemLog" class="log"></div>
+    </div>
 
     <script>
-        function log(msg) {
-            document.getElementById('log').innerHTML += '<div>' + msg + '</div>';
-            console.log(msg);
+        // --- Konfigurasi ---
+        const SUPABASE_URL = 'https://ntyetosvnafeuhnmljd.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // --- Logging ---
+        const logDiv = document.getElementById('systemLog');
+        function addLog(message, isError = false) {
+            const entry = document.createElement('div');
+            entry.style.color = isError ? '#ff8888' : '#88ff88';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
         }
 
-        const supabase = window.supabase.createClient(
-            'https://ntyetosvnafeuhnmljd.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU'
-        );
-        log('✅ Supabase initialized');
+        function generateLink(phone) {
+            const token = btoa(phone + 'jastip2024').substring(0, 15);
+            return window.location.origin + '/customer.html?id=' + phone + '&token=' + token;
+        }
 
-        async function testImport() {
-            log('🟢 Tombol IMPORT diklik');
-            
-            const text = document.getElementById('data').value;
-            log('📝 Data: ' + text);
-            
-            const parts = text.trim().split(/\s+/);
-            log('🔍 Parts: ' + JSON.stringify(parts));
-            
-            if (parts.length < 6) {
-                log('❌ Format salah!');
+        // --- LOAD DATA ---
+        window.loadData = async function() {
+            addLog('🔄 Memuat data dari Supabase...');
+            document.getElementById('status').innerText = 'Loading...';
+
+            const { data, error } = await supabase.from('customers').select('*');
+
+            if (error) {
+                addLog('❌ Gagal memuat data: ' + JSON.stringify(error), true);
+                document.getElementById('status').innerText = 'Error loading';
+                document.getElementById('customerList').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
                 return;
             }
-            
-            const [noHp, nama, produk, qty, harga, status, dp=0] = parts;
-            log('📊 Parsed: ' + JSON.stringify({noHp, nama, produk, qty, harga, status, dp}));
-            
-            log('⏳ Mencoba insert ke Supabase...');
-            const { data, error } = await supabase.from('customers').insert([{
-                phone: noHp,
-                name: nama,
-                products: [{
-                    nama: produk,
-                    qty: parseInt(qty),
-                    harga: parseInt(harga),
-                    status: status,
-                    dp: parseInt(dp)
-                }],
-                total_dp: parseInt(dp),
-                last_update: new Date().toLocaleString('id-ID')
-            }]);
-            
-            if (error) {
-                log('❌ ERROR: ' + JSON.stringify(error));
-            } else {
-                log('✅ SUKSES! Data masuk');
-            }
-        }
 
-        async function testLoad() {
-            log('🟢 Tombol LOAD diklik');
-            const { data, error } = await supabase.from('customers').select('*');
-            
-            if (error) {
-                log('❌ ERROR: ' + JSON.stringify(error));
-            } else {
-                log('📦 Data: ' + JSON.stringify(data, null, 2));
+            addLog(`✅ Data diterima: ${data?.length || 0} customer`);
+            document.getElementById('status').innerText = `Connected (${data?.length || 0} customers)`;
+
+            const listDiv = document.getElementById('customerList');
+            listDiv.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                listDiv.innerHTML = '<p style="color:#666;">Belum ada data customer</p>';
+                return;
             }
-        }
+
+            data.forEach(customer => {
+                let total = 0;
+                customer.products.forEach(p => total += p.qty * p.harga);
+                const link = generateLink(customer.phone);
+                const sisa = total - (customer.total_dp || 0);
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <strong>${customer.name}</strong> <span>${customer.phone}</span>
+                    </div>
+                    <div class="link">${link}</div>
+                    <button class="copy-btn" onclick="copyText('${link}')">📋 COPY LINK</button>
+                    <div style="margin-top:10px;">
+                        💰 Rp ${total.toLocaleString()} | DP: Rp ${(customer.total_dp || 0).toLocaleString()} | Sisa: Rp ${sisa.toLocaleString()}
+                    </div>
+                `;
+                listDiv.appendChild(card);
+            });
+        };
+
+        // --- IMPORT DATA ---
+        window.handleImport = async function() {  // ← Nama fungsi handleImport
+            addLog('✨ Tombol IMPORT diklik');
+            const rawText = document.getElementById('importData').value;
+            const lines = rawText.split('\n');
+            let successCount = 0;
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+
+                const parts = line.split(/\s+/);
+                if (parts.length < 6) {
+                    addLog(`⚠️ Baris dilewati (kurang kolom): ${line}`, true);
+                    continue;
+                }
+
+                const [noHp, nama, produk, qty, harga, status, dp = '0'] = parts;
+                addLog(`📦 Memproses: ${noHp} - ${produk}`);
+
+                const product = {
+                    nama: produk,
+                    qty: parseInt(qty) || 0,
+                    harga: parseInt(harga) || 0,
+                    status: status,
+                    dp: parseInt(dp) || 0
+                };
+
+                const { data: existing } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('phone', noHp)
+                    .maybeSingle();
+
+                if (existing) {
+                    addLog(`🔄 Customer ${noHp} sudah ada, update produk...`);
+                    const currentProducts = existing.products || [];
+                    currentProducts.push(product);
+                    const newTotalDp = (existing.total_dp || 0) + product.dp;
+
+                    const { error } = await supabase
+                        .from('customers')
+                        .update({
+                            products: currentProducts,
+                            total_dp: newTotalDp,
+                            last_update: new Date().toLocaleString('id-ID')
+                        })
+                        .eq('phone', noHp);
+
+                    if (error) {
+                        addLog(`❌ Gagal update: ${JSON.stringify(error)}`, true);
+                    } else {
+                        addLog(`✅ Berhasil update produk`);
+                        successCount++;
+                    }
+                } else {
+                    addLog(`🆕 Customer baru ${noHp}, insert...`);
+                    const { error } = await supabase
+                        .from('customers')
+                        .insert([{
+                            phone: noHp,
+                            name: nama,
+                            products: [product],
+                            total_dp: product.dp,
+                            last_update: new Date().toLocaleString('id-ID'),
+                            first_order: new Date().toISOString()
+                        }]);
+
+                    if (error) {
+                        addLog(`❌ Gagal insert: ${JSON.stringify(error)}`, true);
+                    } else {
+                        addLog(`✅ Berhasil insert customer`);
+                        successCount++;
+                    }
+                }
+            }
+
+            addLog(`🎉 Selesai! ${successCount} produk berhasil diimport.`);
+            document.getElementById('importData').value = '';
+            loadData();
+        };
+
+        // --- COPY LINK ---
+        window.copyText = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                addLog('✅ Link disalin ke clipboard');
+            });
+        };
+
+        window.onload = function() {
+            addLog('🚀 Halaman dimuat, menghubungkan ke Supabase...');
+            loadData();
+        };
     </script>
 </body>
 </html>
