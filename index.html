@@ -61,6 +61,7 @@
             border-radius: 10px;
             font-family: monospace;
             margin-bottom: 15px;
+            resize: vertical;
         }
         button {
             background: #28a745;
@@ -111,12 +112,14 @@
         .copy-btn {
             background: #28a745;
             width: 100%;
+            margin-top: 5px;
         }
         .stats {
             display: flex;
             justify-content: space-between;
             margin-top: 15px;
             color: #666;
+            font-size: 0.9rem;
         }
         .notification {
             position: fixed;
@@ -157,7 +160,9 @@
             </div>
 
             <h2>📱 DAFTAR CUSTOMER</h2>
-            <div id="customersList" style="text-align:center; padding:20px;">Memuat data...</div>
+            <div id="customersList" class="customers-grid">
+                <p style="text-align: center; color: #666;">Memuat data...</p>
+            </div>
         </div>
     </div>
 
@@ -169,91 +174,148 @@
         // ===== INISIALISASI (HANYA SEKALI) =====
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ===== FUNGSI =====
+        // ===== FUNGSI REFRESH DATA =====
         async function refreshData() {
             const container = document.getElementById('customersList');
-            container.innerHTML = 'Memuat data...';
+            container.innerHTML = '<p style="text-align: center; color: #666;">Memuat data...</p>';
             
             const { data, error } = await supabase.from('customers').select('*');
             
             if (error) {
-                container.innerHTML = 'Error: ' + error.message;
+                container.innerHTML = '<p style="text-align: center; color: red;">Error: ' + error.message + '</p>';
                 return;
             }
             
             if (!data || data.length === 0) {
-                container.innerHTML = 'Belum ada data customer';
+                container.innerHTML = '<p style="text-align: center; color: #666;">Belum ada data customer</p>';
                 return;
             }
             
-            let html = '<div style="display:grid;gap:15px;">';
-            data.forEach(c => {
-                const token = btoa(c.phone + 'jastip2024').substring(0,15);
-                const link = window.location.origin + '/customer.html?id=' + c.phone + '&token=' + token;
+            container.innerHTML = '';
+            
+            data.forEach(customer => {
+                let totalBelanja = 0;
+                let totalItems = 0;
                 
-                let total = 0;
-                c.products.forEach(p => total += p.qty * p.harga);
-                
-                html += `
-                    <div style="background:#f8f9fa;padding:15px;border-radius:10px;">
-                        <div style="display:flex;justify-content:space-between;">
-                            <strong>${c.name}</strong> <span>${c.phone}</span>
-                        </div>
-                        <div style="background:#e9ecef;padding:8px;margin:10px 0;word-break:break-all;font-family:monospace;font-size:0.85rem;">
-                            ${link}
-                        </div>
-                        <button onclick="copyLink('${c.phone}')" style="background:#28a745;color:white;border:none;padding:8px;width:100%;border-radius:5px;cursor:pointer;">
-                            📋 COPY LINK
-                        </button>
-                        <div style="margin-top:10px;">💰 Rp ${total.toLocaleString()} | DP: Rp ${(c.total_dp||0).toLocaleString()}</div>
+                customer.products.forEach(p => {
+                    totalBelanja += p.qty * p.harga;
+                    totalItems += p.qty;
+                });
+
+                const token = btoa(customer.phone + 'jastip2024').substring(0, 15);
+                const link = window.location.origin + '/customer.html?id=' + customer.phone + '&token=' + token;
+                const sisa = totalBelanja - (customer.total_dp || 0);
+
+                const card = document.createElement('div');
+                card.className = 'customer-card';
+                card.innerHTML = `
+                    <div class="customer-header">
+                        <span>${customer.name}</span>
+                        <span>${customer.phone}</span>
+                    </div>
+                    <div class="private-link" id="link-${customer.phone}">${link}</div>
+                    <button class="copy-btn" onclick="copyLink('${customer.phone}')">📋 COPY LINK</button>
+                    <div class="stats">
+                        <span>📦 ${totalItems} item</span>
+                        <span>💰 Rp ${totalBelanja.toLocaleString()}</span>
+                    </div>
+                    <div class="stats">
+                        <span>💵 DP: Rp ${(customer.total_dp || 0).toLocaleString()}</span>
+                        <span>💳 Sisa: Rp ${sisa.toLocaleString()}</span>
                     </div>
                 `;
+                container.appendChild(card);
             });
-            html += '</div>';
-            container.innerHTML = html;
         }
 
+        // ===== FUNGSI IMPORT DATA =====
         async function importData() {
             const text = document.getElementById('importData').value;
-            const parts = text.trim().split(/\s+/);
-            
-            if (parts.length < 6) {
-                alert('Format salah! Minimal 6 kolom');
+            if (!text) {
+                alert('Masukkan data dulu!');
                 return;
             }
-            
-            const [noHp, nama, produk, qty, harga, status, dp=0] = parts;
-            
-            const { error } = await supabase.from('customers').insert([{
-                phone: noHp,
-                name: nama,
-                products: [{
+
+            const lines = text.split('\n');
+            let imported = 0;
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                
+                const parts = line.split(/\s+/);
+                if (parts.length < 6) continue;
+                
+                const [noHp, nama, produk, qty, harga, status, dp = 0] = parts;
+                
+                // Cek apakah customer sudah ada
+                const { data: existing } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('phone', noHp)
+                    .maybeSingle();
+                
+                const product = {
                     nama: produk,
                     qty: parseInt(qty),
                     harga: parseInt(harga),
                     status: status,
                     dp: parseInt(dp)
-                }],
-                total_dp: parseInt(dp),
-                last_update: new Date().toLocaleString('id-ID')
-            }]);
-            
-            if (error) {
-                alert('Error: ' + error.message);
-            } else {
-                alert('Data berhasil diimport!');
-                document.getElementById('importData').value = '';
-                refreshData();
+                };
+                
+                if (existing) {
+                    // Update existing
+                    const currentProducts = existing.products || [];
+                    currentProducts.push(product);
+                    
+                    await supabase
+                        .from('customers')
+                        .update({
+                            products: currentProducts,
+                            total_dp: (existing.total_dp || 0) + parseInt(dp),
+                            last_update: new Date().toLocaleString('id-ID')
+                        })
+                        .eq('phone', noHp);
+                } else {
+                    // Insert baru
+                    await supabase
+                        .from('customers')
+                        .insert([{
+                            phone: noHp,
+                            name: nama,
+                            products: [product],
+                            total_dp: parseInt(dp),
+                            last_update: new Date().toLocaleString('id-ID'),
+                            first_order: new Date().toISOString()
+                        }]);
+                }
+                imported++;
             }
+            
+            alert(`✅ Berhasil import ${imported} produk`);
+            document.getElementById('importData').value = '';
+            refreshData();
         }
 
+        // ===== FUNGSI COPY LINK =====
         function copyLink(phone) {
-            const token = btoa(phone + 'jastip2024').substring(0,15);
+            const token = btoa(phone + 'jastip2024').substring(0, 15);
             const link = window.location.origin + '/customer.html?id=' + phone + '&token=' + token;
-            navigator.clipboard.writeText(link).then(() => alert('Link disalin!'));
+            
+            navigator.clipboard.writeText(link).then(() => {
+                alert('✅ Link disalin!');
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = link;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('✅ Link disalin!');
+            });
         }
 
-        // ===== JALANKAN =====
+        // ===== JALANKAN SAAT HALAMAN DIBUKA =====
         window.onload = refreshData;
     </script>
 </body>
