@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jastipbyceline · Status Pesanan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        .card {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 2rem;
+        }
+        .header p {
+            color: #666;
+            margin-top: 5px;
+        }
+        .status-badge {
+            background: #f0f9ff;
+            color: #0369a1;
+            padding: 10px;
+            border-radius: 50px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 30px;
+            border: 1px solid #bae6fd;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            color: #666;
+            font-weight: 500;
+        }
+        .value {
+            font-weight: 600;
+            color: #333;
+        }
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .product-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+        .product-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .product-table tr:last-child td {
+            border-bottom: none;
+        }
+        .total-section {
+            background: #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 1.1rem;
+        }
+        .grand-total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            border-top: 2px solid #667eea;
+            padding-top: 15px;
+            margin-top: 10px;
+        }
+        .error-card {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            text-align: center;
+            padding: 40px;
+        }
+        .error-card h2 {
+            color: #dc2626;
+            margin-bottom: 10px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .important-note {
+            background: #fff3cd;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin-top: 25px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <!-- Konten akan diisi oleh JavaScript -->
+    </div>
+
+    <script>
+        // Fungsi untuk mengambil parameter URL
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Ambil data customer dari localStorage (via Admin)
+        function getCustomerData(phone) {
+            const allCustomers = JSON.parse(localStorage.getItem('jastip_customers')) || {};
+            return allCustomers[phone];
+        }
+
+        // Validasi akses
+        function validateAccess() {
+            const phone = getUrlParameter('id');
+            const token = getUrlParameter('token');
+            
+            const app = document.getElementById('app');
+            
+            // Cek apakah parameter lengkap
+            if (!phone || !token) {
+                app.innerHTML = `
+                    <div class="card error-card">
+                        <h2>🔒 Akses Ditolak</h2>
+                        <p>Link tidak valid atau sudah kadaluarsa.</p>
+                        <p style="margin-top: 20px; font-size: 0.9rem;">Hubungi admin untuk mendapatkan link yang benar.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Validasi token (sederhana)
+            const validToken = btoa(phone).substring(0,10);
+            if (token !== validToken) {
+                app.innerHTML = `
+                    <div class="card error-card">
+                        <h2>🔒 Akses Ditolak</h2>
+                        <p>Token tidak valid.</p>
+                        <p style="margin-top: 20px; font-size: 0.9rem;">Minta link baru ke admin.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Ambil data customer
+            const customer = getCustomerData(phone);
+            
+            if (!customer) {
+                app.innerHTML = `
+                    <div class="card error-card">
+                        <h2>❌ Data Tidak Ditemukan</h2>
+                        <p>Tidak ada pesanan untuk nomor ${phone}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Tampilkan data customer
+            displayCustomerData(customer);
+        }
+
+        function displayCustomerData(customer) {
+            const app = document.getElementById('app');
+            
+            let totalBelanja = 0;
+            let totalItems = 0;
+            let productsHtml = '';
+            
+            customer.products.forEach((p, index) => {
+                const subtotal = p.qty * p.harga;
+                totalBelanja += subtotal;
+                totalItems += p.qty;
+                
+                productsHtml += `
+                    <tr>
+                        <td>${p.nama}</td>
+                        <td>${p.qty}</td>
+                        <td>Rp ${p.harga.toLocaleString()}</td>
+                        <td>Rp ${subtotal.toLocaleString()}</td>
+                        <td><span style="background: ${p.status === 'READY' ? '#d4edda' : '#fff3cd'}; padding: 3px 8px; border-radius: 50px; font-size: 0.8rem;">${p.status}</span></td>
+                    </tr>
+                `;
+            });
+
+            const sisa = totalBelanja - customer.totalDp;
+
+            app.innerHTML = `
+                <div class="card">
+                    <div class="header">
+                        <h1>📦 JASTIPBYCELINE</h1>
+                        <p>Status Pesanan</p>
+                    </div>
+                    
+                    <div class="status-badge">
+                        ⏳ Pesanan Sedang Diproses
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-row">
+                            <span class="label">Nama Customer</span>
+                            <span class="value">${customer.nama}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">No HP</span>
+                            <span class="value">${customer.noHp}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Total Item</span>
+                            <span class="value">${totalItems} pcs</span>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 20px 0 10px;">📋 Detail Produk</h3>
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th>Produk</th>
+                                <th>Qty</th>
+                                <th>Harga</th>
+                                <th>Subtotal</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="total-section">
+                        <div class="total-row">
+                            <span>Total Belanja</span>
+                            <span>Rp ${totalBelanja.toLocaleString()}</span>
+                        </div>
+                        <div class="total-row">
+                            <span>DP Dibayar</span>
+                            <span style="color: #28a745;">Rp ${customer.totalDp.toLocaleString()}</span>
+                        </div>
+                        <div class="total-row grand-total">
+                            <span>Sisa Pembayaran</span>
+                            <span style="color: ${sisa > 0 ? '#dc3545' : '#28a745'}">Rp ${sisa.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="important-note">
+                        <strong>⚠️ PENTING</strong><br>
+                        Transfer BCA hanya atas nama <strong>CELINE PUTRI C</strong><br>
+                        <small>No. Rekening: 1234567890</small>
+                    </div>
+
+                    <div class="footer">
+                        Terakhir update: ${customer.lastUpdate}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Jalankan validasi saat halaman dimuat
+        window.onload = validateAccess;
+    </script>
+</body>
+</html>

@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jastipbyceline · Manajemen Order</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+        body {
+            background: #f3f4f9;
+            padding: 24px 16px;
+            display: flex;
+            justify-content: center;
+        }
+        .main-card {
+            max-width: 1280px;
+            width: 100%;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px -8px rgba(0,20,40,0.2);
+            overflow: hidden;
+            border: 1px solid #eaeef5;
+        }
+        .header {
+            background: #0b1a2f;
+            color: white;
+            padding: 22px 28px;
+        }
+        .header h1 {
+            font-weight: 500;
+            font-size: 1.9rem;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header h1 span {
+            background: #2d4b71;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 400;
+            margin-left: 12px;
+        }
+        .header .jastip {
+            color: #b3ceff;
+            margin-top: 6px;
+            font-size: 0.95rem;
+        }
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .left-panel {
+            flex: 1.2;
+            min-width: 340px;
+            padding: 26px 28px;
+            background: #ffffff;
+            border-right: 1px solid #dee6f0;
+        }
+        .right-panel {
+            flex: 1.8;
+            padding: 26px 28px;
+            background: #f9fbfe;
+        }
+        .status-order {
+            background: #f0f4fe;
+            padding: 18px 20px;
+            border-radius: 22px;
+            margin-bottom: 28px;
+            border: 1px solid #ccd9f0;
+        }
+        .status-order .label {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #1f3a6b;
+            margin-bottom: 6px;
+        }
+        .status-order .badge {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #102a4e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-order .badge::before {
+            content: "⏳";
+            font-size: 2rem;
+        }
+        .info-customer {
+            background: white;
+            border-radius: 20px;
+            padding: 18px 0 8px 0;
+            margin-bottom: 28px;
+            border: 1px solid #e2e8f2;
+        }
+        .info-row {
+            display: flex;
+            padding: 8px 20px;
+            border-bottom: 1px dashed #edf2f9;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            width: 100px;
+            font-weight: 500;
+            color: #436692;
+        }
+        .info-value {
+            color: #121f33;
+            font-weight: 500;
+        }
+        .empty-products {
+            background: white;
+            border-radius: 24px;
+            padding: 24px 20px;
+            border: 1px solid #f0d7da;
+            background: #fff6f7;
+            color: #a14f5b;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+        }
+        .table-products {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            margin: 20px 0;
+            border: 1px solid #dde3ed;
+        }
+        .table-products th {
+            background: #eef3fc;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 14px 8px;
+            color: #1b314b;
+        }
+        .table-products td {
+            padding: 16px 8px;
+            border-bottom: 1px solid #eaeff7;
+            text-align: center;
+            color: #10243e;
+        }
+        .table-products tr:last-child td {
+            border-bottom: none;
+        }
+        .summary-box {
+            background: #eef3fa;
+            border-radius: 20px;
+            padding: 18px 22px;
+            margin: 28px 0 20px;
+        }
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            padding: 8px 0;
+            border-bottom: 1px solid #cdd9ec;
+        }
+        .summary-line:last-child {
+            border-bottom: none;
+        }
+        .dp-line {
+            color: #1b4b3b;
+        }
+        .sisa-line {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #10345e;
+        }
+        .important-note {
+            background: #fff9e0;
+            border-left: 6px solid #f5b342;
+            padding: 16px 22px;
+            border-radius: 18px;
+            font-weight: 600;
+            color: #3b2e0e;
+            margin-top: 28px;
+            font-size: 0.95rem;
+        }
+        .important-note::before {
+            content: "⚠️ PENTING ⚠️";
+            display: block;
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: #ad6400;
+        }
+        .bank-note {
+            background: #ebf2fa;
+            border-radius: 16px;
+            padding: 14px 18px;
+            font-size: 1rem;
+            color: #0e2d47;
+            border: 1px solid #b9d1ee;
+        }
+        .import-card {
+            background: white;
+            border-radius: 24px;
+            padding: 18px 20px 24px;
+            border: 1px solid #cbd6e6;
+            margin-bottom: 32px;
+        }
+        .import-card h3 {
+            font-weight: 500;
+            color: #10345e;
+            margin-bottom: 6px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .import-card h3 small {
+            font-size: 0.8rem;
+            background: #dee9f5;
+            padding: 4px 12px;
+            border-radius: 30px;
+            color: #1a3d62;
+        }
+        .format-hint {
+            background: #e5ecf7;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            margin: 15px 0 10px;
+            border: 1px dashed #7895b7;
+            color: #002856;
+        }
+        .example-row {
+            background: #dbe6f3;
+            padding: 10px 16px;
+            border-radius: 40px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin: 12px 0 18px;
+            color: #002451;
+            white-space: pre-wrap;
+        }
+        textarea {
+            width: 100%;
+            border: 2px solid #b7cbeb;
+            border-radius: 24px;
+            padding: 20px 18px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            background: white;
+            resize: vertical;
+            margin: 12px 0 8px;
+        }
+        textarea:focus {
+            border-color: #10345e;
+            outline: none;
+        }
+        .btn-import {
+            background: #10345e;
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 8px 18px rgba(0,40,80,0.2);
+            width: 100%;
+        }
+        .btn-import:hover {
+            background: #1e4a7a;
+        }
+        .customer-link-panel {
+            background: linear-gradient(145deg, #e3edfc, white);
+            border-radius: 26px;
+            padding: 22px 22px;
+            border: 1px solid #acc3e5;
+            margin-top: 28px;
+        }
+        .link-container {
+            background: white;
+            padding: 14px 18px;
+            border-radius: 60px;
+            border: 1px solid #10345e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .link-customer {
+            font-weight: 600;
+            color: #10345e;
+            text-decoration: none;
+            word-break: break-all;
+            font-size: 1rem;
+        }
+        .btn-copy {
+            background: #10345e;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+        .error-msg {
+            color: #b02b3a;
+            background: #ffe6e8;
+            padding: 12px 16px;
+            border-radius: 30px;
+            margin: 10px 0;
+        }
+        .success-msg {
+            color: #0b5e3c;
+            background: #e0ffe8;
+            padding: 12px 16px;
+            border-radius: 30px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="main-card" id="app">
+    <div class="header">
+        <h1>📦 JASTIPBYCELINE <span>order manager</span></h1>
+        <div class="jastip">Status pesanan · custom link otomatis</div>
+    </div>
+
+    <div class="two-columns">
+        <!-- LEFT PANEL: STATUS PESANAN + DETAIL CUSTOMER -->
+        <div class="left-panel">
+            <div class="status-order">
+                <div class="label">STATUS PESANAN</div>
+                <div class="badge">Pesanan sedang diproses</div>
+            </div>
+
+            <div class="info-customer" id="customerInfoPanel">
+                <div class="info-row">
+                    <span class="info-label">Nama Customer</span>
+                    <span class="info-value" id="displayNama">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">No HP</span>
+                    <span class="info-value" id="displayHp">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Total Item</span>
+                    <span class="info-value" id="displayTotalItem">0 pcs</span>
+                </div>
+            </div>
+
+            <!-- AREA PRODUK (table) -->
+            <div id="productTableArea">
+                <table class="table-products" id="produkTable" style="display: none;">
+                    <thead><tr><th>PRODUK</th><th>QTY</th><th>HARGA</th><th>SUBTOTAL</th><th>STATUS</th></tr></thead>
+                    <tbody id="produkBody"></tbody>
+                </table>
+                <div class="empty-products" id="emptyProdukMsg">
+                    <span>❌</span> Data produk belum tersedia
+                </div>
+            </div>
+
+            <!-- SUMMARY & DP -->
+            <div class="summary-box">
+                <div class="summary-line"><span>Total Belanja</span> <span id="totalBelanja">Rp 0</span></div>
+                <div class="summary-line dp-line"><span>DP</span> <span id="totalDP">Rp 0</span></div>
+                <div class="summary-line sisa-line"><span>Sisa Pembayaran</span> <span id="sisaPembayaran">Rp 0</span></div>
+            </div>
+
+            <div class="important-note">
+                Transfer BCA hanya atas nama <strong>CELINE PUTRI C</strong>
+            </div>
+            <div class="bank-note" style="margin-top: 16px;">
+                💳 BCA: 1234567890 a.n. CELINE PUTRI C
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: IMPORT + LINK CUSTOMER -->
+        <div class="right-panel">
+            <div class="import-card">
+                <h3>📋 IMPORT DATA CUSTOMER 
+                    <small>Copy & Paste dari Spreadsheet</small>
+                </h3>
+                <div class="format-hint">
+                    ✅ Format bisa pakai <strong>SPASI atau TAB</strong><br>
+                    Urutan: No HP | Nama | Produk | Qty | Harga | Status | DP
+                </div>
+                <div class="example-row">
+                    📌 Contoh: 81399999999 danny sepatu 1 149000 dapat 50000
+                </div>
+                <textarea id="importRawData" rows="4" placeholder="Tempel data di sini..."></textarea>
+                <button class="btn-import" id="importBtn">✨ IMPORT DATA</button>
+                
+                <!-- notif -->
+                <div id="importStatus" style="margin-top: 15px;"></div>
+            </div>
+
+            <!-- LINK CUSTOMER PANEL -->
+            <div class="customer-link-panel" id="linkPanel" style="display: none;">
+                <h3 style="margin-top: 0; margin-bottom: 16px;">🔗 Link khusus customer</h3>
+                <div class="link-container">
+                    <a href="#" id="customerLink" class="link-customer" target="_blank">https://jastipbyceline.link/customer/...</a>
+                    <button class="btn-copy" id="copyLinkBtn">Salin link</button>
+                </div>
+                <p style="font-size:0.85rem; margin-top:14px; color:#294c73;">
+                    *Link akan tetap sama untuk customer yang sama (berdasarkan No HP). Setiap import akan memperbarui data.
+                </p>
+            </div>
+
+            <!-- info small -->
+            <div style="margin-top: 22px; font-size:0.85rem; background:#ecf3fa; padding:14px; border-radius:18px; color:#1e3d64;">
+                🧾 <strong>Catatan:</strong> Link dibuat otomatis berdasarkan nomor HP. Jika sudah pernah order, link tidak berubah tapi data selalu terbarui.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Storage: customer map berdasarkan no hp
+        let customerDB = new Map();
+        let activeNoHp = null;
+
+        // Fungsi parsing baris dengan spasi/tab
+        function parseLine(line) {
+            // Hapus spasi di awal dan akhir
+            line = line.trim();
+            if (line === '') return null;
+            
+            // Split berdasarkan whitespace (spasi atau tab)
+            // Tapi hati-hati karena nama produk bisa terdiri dari 2 kata
+            // Kita asumsikan format: noHp nama produk qty harga status dp
+            // Dengan produk bisa multi kata, jadi kita split manual
+            
+            const parts = line.split(/\s+/); // pisah berdasarkan spasi/tab berapapun
+            
+            // Minimal harus 6 bagian (kalo DP ga diisi nanti kita handle)
+            if (parts.length < 6) return null;
+            
+            // Cara baca: dari belakang lebih mudah
+            // Format: [noHp, ...namaProduk, qty, harga, status, dp?]
+            
+            let dp = 0;
+            let status = '';
+            let harga = 0;
+            let qty = 0;
+            let namaProdukParts = [];
+            
+            // Coba tebak: bagian terakhir mungkin DP (angka) atau status
+            // Kita lihat dari belakang
+            let lastIndex = parts.length - 1;
+            
+            // Cek apakah bagian terakhir adalah angka (DP)
+            if (!isNaN(parseInt(parts[lastIndex])) && parts[lastIndex] !== '') {
+                dp = parseInt(parts[lastIndex]) || 0;
+                lastIndex--;
+            }
+            
+            // Bagian sekarang adalah status (harusnya string)
+            if (lastIndex >= 0) {
+                status = parts[lastIndex];
+                lastIndex--;
+            }
+            
+            // Bagian sekarang adalah harga (harus angka)
+            if (lastIndex >= 0) {
+                harga = parseInt(parts[lastIndex]) || 0;
+                lastIndex--;
+            }
+            
+            // Bagian sekarang adalah qty (harus angka)
+            if (lastIndex >= 0) {
+                qty = parseInt(parts[lastIndex]) || 0;
+                lastIndex--;
+            }
+            
+            // Sisa bagian dari awal sampai lastIndex adalah nama produk (bisa multi kata)
+            let noHp = '';
+            let namaProduk = '';
+            
+            if (lastIndex >= 0) {
+                // Bagian pertama adalah noHp
+                noHp = parts[0];
+                
+                // Sisanya dari index 1 sampai lastIndex adalah nama produk
+                if (lastIndex >= 1) {
+                    namaProduk = parts.slice(1, lastIndex + 1).join(' ');
+                } else {
+                    namaProduk = ''; // kalo ga ada nama produk??
+                }
+            } else {
+                // Format tidak sesuai
+                return null;
+            }
+            
+            // Validasi minimal
+            if (!noHp || !namaProduk || qty === 0) return null;
+            
+            // Nama customer belum ada di format, kita pakai dari produk dulu?
+            // Karena di format kamu cuma ada nama produk, bukan nama customer
+            // Sementara kita pakai 'danny' itu sebagai nama customer?
+            // Di contoh: 81399999999 danny sepatu 1 149000 dapat 50000
+            // Berarti: noHp, namaCustomer, namaProduk, qty, harga, status, dp
+            
+            // Coba pendekatan berbeda: asumsikan urutan tetap
+            // noHp, namaCustomer, namaProduk, qty, harga, status, dp
+            // Tapi namaProduk bisa multi kata, jadi agak kompleks
+            
+            // Pendekatan sederhana: asumsikan format seperti contoh
+            // 81399999999 danny sepatu 1 149000 dapat 50000
+            // Di mana:
+            // - noHp: 81399999999
+            // - namaCustomer: danny
+            // - namaProduk: sepatu
+            // - qty: 1
+            // - harga: 149000
+            // - status: dapat
+            // - dp: 50000
+            
+            // Mari kita coba parsing dengan asumsi itu
+            // Split dengan spasi, lalu:
+            if (parts.length >= 7) {
+                // Asumsi format lengkap dengan nama customer
+                noHp = parts[0];
+                let namaCustomer = parts[1];
+                let namaProduk = parts[2]; // hanya 1 kata
+                qty = parseInt(parts[3]) || 0;
+                harga = parseInt(parts[4]) || 0;
+                status = parts[5];
+                dp = parseInt(parts[6]) || 0;
+                
+                return {
+                    noHp: noHp,
+                    nama: namaCustomer,
+                    produk: namaProduk,
+                    qty: qty,
+                    harga: harga,
+                    status: status,
+                    dp: dp
+                };
+            } else if (parts.length >= 6) {
+                // Format tanpa DP (DP 0)
+                noHp = parts[0];
+                let namaCustomer = parts[1];
+                let namaProduk = parts[2];
+                qty = parseInt(parts[3]) || 0;
+                harga = parseInt(parts[4]) || 0;
+                status = parts[5];
+                dp = 0;
+                
+                return {
+                    noHp: noHp,
+                    nama: namaCustomer,
+                    produk: namaProduk,
+                    qty: qty,
+                    harga: harga,
+                    status: status,
+                    dp: dp
+                };
+            }
+            
+            return null;
+        }
+
+        // update tampilan berdasarkan no hp aktif
+        function renderCustomer(noHp) {
+            const customerInfo = customerDB.get(noHp);
+            if (!customerInfo) {
+                document.getElementById('displayNama').innerText = '-';
+                document.getElementById('displayHp').innerText = '-';
+                document.getElementById('displayTotalItem').innerText = '0 pcs';
+                document.getElementById('produkBody').innerHTML = '';
+                document.getElementById('produkTable').style.display = 'none';
+                document.getElementById('emptyProdukMsg').style.display = 'flex';
+                document.getElementById('totalBelanja').innerText = 'Rp 0';
+                document.getElementById('totalDP').innerText = 'Rp 0';
+                document.getElementById('sisaPembayaran').innerText = 'Rp 0';
+                document.getElementById('linkPanel').style.display = 'none';
+                return;
+            }
+
+            // Update data customer
+            document.getElementById('displayNama').innerText = customerInfo.nama || '-';
+            document.getElementById('displayHp').innerText = customerInfo.noHp || '-';
+            let totalQty = customerInfo.produkList.reduce((acc, p) => acc + p.qty, 0);
+            document.getElementById('displayTotalItem').innerText = totalQty + ' pcs';
+
+            // Render tabel produk
+            const tbody = document.getElementById('produkBody');
+            tbody.innerHTML = '';
+            if (customerInfo.produkList.length === 0) {
+                document.getElementById('produkTable').style.display = 'none';
+                document.getElementById('emptyProdukMsg').style.display = 'flex';
+            } else {
+                document.getElementById('produkTable').style.display = 'table';
+                document.getElementById('emptyProdukMsg').style.display = 'none';
+                customerInfo.produkList.forEach(p => {
+                    const subtotal = p.qty * p.harga;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${p.produk}</td><td>${p.qty}</td><td>Rp ${p.harga.toLocaleString()}</td><td>Rp ${subtotal.toLocaleString()}</td><td>${p.status}</td>`;
+                    tbody.appendChild(row);
+                });
+            }
+
+            // Hitung total Belanja, DP, sisa
+            let totalBelanja = customerInfo.produkList.reduce((acc, p) => acc + (p.qty * p.harga), 0);
+            let accumulatedDP = customerInfo.produkList.reduce((acc, p) => acc + (p.dp || 0), 0);
+            
+            document.getElementById('totalBelanja').innerText = 'Rp ' + totalBelanja.toLocaleString();
+            document.getElementById('totalDP').innerText = 'Rp ' + accumulatedDP.toLocaleString();
+            let sisa = totalBelanja - accumulatedDP;
+            document.getElementById('sisaPembayaran').innerText = 'Rp ' + (sisa >=0 ? sisa.toLocaleString() : '0');
+
+            // update link panel
+            const linkPanel = document.getElementById('linkPanel');
+            linkPanel.style.display = 'block';
+            const baseUrl = 'https://jastipbyceline.link/customer/';
+            const safeNoHp = noHp.replace(/\s+/g, '');
+            const fullLink = baseUrl + encodeURIComponent(safeNoHp);
+            const linkEl = document.getElementById('customerLink');
+            linkEl.href = fullLink;
+            linkEl.innerText = fullLink;
+
+            activeNoHp = noHp;
+        }
+
+        // Proses import data
+        function importData(rawText) {
+            const statusDiv = document.getElementById('importStatus');
+            statusDiv.innerHTML = '';
+            
+            const lines = rawText.split('\n').filter(l => l.trim() !== '');
+            if (lines.length === 0) {
+                statusDiv.innerHTML = '<div class="error-msg">❌ Tidak ada data</div>';
+                return;
+            }
+
+            let parsedCount = 0;
+            let lastNoHp = null;
+            
+            // Reset dulu untuk customer yang akan diupdate? Kita akan reset per customer
+            // Tapi lebih baik kita kumpulkan dulu semua data baru
+            let newData = [];
+            
+            for (let line of lines) {
+                const parsed = parseLine(line);
+                if (parsed) {
+                    newData.push(parsed);
+                    parsedCount++;
+                }
+            }
+            
+            if (parsedCount === 0) {
+                statusDiv.innerHTML = '<div class="error-msg">⚠️ Format tidak dikenali. Gunakan spasi sebagai pemisah.<br>Contoh: 81399999999 danny sepatu 1 149000 dapat 50000</div>';
+                return;
+            }
+            
+            // Reset customer yang ada di data baru
+            let affectedCustomers = new Set(newData.map(d => d.noHp));
+            
+            // Hapus produk lama untuk customer tersebut (tapi simpan data customer)
+            for (let hp of affectedCustomers) {
+                if (customerDB.has(hp)) {
+                    customerDB.get(hp).produkList = [];
+                } else {
+                    // Buat baru
+                    customerDB.set(hp, {
+                        noHp: hp,
+                        nama: '',
+                        produkList: []
+                    });
+                }
+            }
+            
+            // Masukkan data baru
+            for (let data of newData) {
+                const customer = customerDB.get(data.noHp);
+                if (customer) {
+                    // Update nama (ambil dari data terakhir)
+                    customer.nama = data.nama;
+                    
+                    // Tambah produk
+                    customer.produkList.push({
+                        produk: data.produk,
+                        qty: data.qty,
+                        harga: data.harga,
+                        status: data.status,
+                        dp: data.dp
+                    });
+                    
+                    lastNoHp = data.noHp;
+                }
+            }
+            
+            statusDiv.innerHTML = `<div class="success-msg">✅ Berhasil import ${parsedCount} produk untuk ${affectedCustomers.size} customer</div>`;
+
+            // Setelah import, tampilkan customer terakhir
+            if (lastNoHp) {
+                renderCustomer(lastNoHp);
+            } else if (affectedCustomers.size > 0) {
+                renderCustomer(Array.from(affectedCustomers)[0]);
+            }
+
+            // Bersihkan textarea
+            document.getElementById('importRawData').value = '';
+        }
+
+        // Event listener import
+        document.getElementById('importBtn').addEventListener('click', function() {
+            const raw = document.getElementById('importRawData').value;
+            importData(raw);
+        });
+
+        // Copy link
+        document.getElementById('copyLinkBtn').addEventListener('click', function() {
+            const link = document.getElementById('customerLink').href;
+            if (link && link !== '#') {
+                navigator.clipboard.writeText(link).then(() => {
+                    alert('✅ Link customer disalin!');
+                }).catch(() => alert('Tekan Ctrl+C untuk menyalin'));
+            } else {
+                alert('Tidak ada link customer aktif.');
+            }
+        });
+
+        // Contoh seeding
+        window.addEventListener('load', function() {
+            if (customerDB.size === 0) {
+                // Tambah data dummy sesuai format kamu
+                const dummyRaw = `81399999999 danny sepatu 1 149000 dapat 50000`;
+                importData(dummyRaw);
+            }
+        });
+    })();
+</script>
+</body>
+</html>
