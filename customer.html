@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jastipbyceline · Status Pesanan</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -54,7 +55,6 @@
             display: inline-block;
             margin-bottom: 20px;
             font-weight: 600;
-            font-size: 0.9rem;
         }
         .status-badge {
             background: #f0f9ff;
@@ -64,7 +64,6 @@
             text-align: center;
             font-weight: 600;
             margin-bottom: 30px;
-            border: 1px solid #bae6fd;
         }
         .info-card {
             background: #f8f9fa;
@@ -98,15 +97,11 @@
             background: #667eea;
             color: white;
             padding: 12px;
-            font-size: 0.9rem;
         }
         .product-table td {
             padding: 12px;
             border-bottom: 1px solid #dee2e6;
             text-align: center;
-        }
-        .product-table tr:last-child td {
-            border-bottom: none;
         }
         .total-section {
             background: #e9ecef;
@@ -123,7 +118,6 @@
         .grand-total {
             font-size: 1.3rem;
             font-weight: 700;
-            color: #333;
             border-top: 2px solid #667eea;
             padding-top: 15px;
             margin-top: 10px;
@@ -139,26 +133,12 @@
             color: #dc2626;
             margin-bottom: 10px;
         }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
         .important-note {
             background: #fff3cd;
             border-left: 4px solid #f59e0b;
             padding: 15px;
             margin-top: 25px;
             border-radius: 10px;
-        }
-        .order-history {
-            background: #e3f2fd;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 15px;
-            font-size: 0.9rem;
-            text-align: center;
         }
         .loading {
             text-align: center;
@@ -177,78 +157,68 @@
     </div>
 
     <script>
-        // Fungsi untuk mengambil parameter dari URL
+        // CONFIG - SUDAH DIISI DENGAN PUNYA KAMU!
+        const SUPABASE_URL = 'https://ntyetosvnafeuhnmljd.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         function getUrlParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
         }
 
-        // Fungsi untuk validasi token - HARUS SAMA PERSIS DENGAN DI ADMIN
         function validateToken(phone, token) {
-            // Cara generate token harus sama persis dengan di admin
-            // Di admin: btoa(phone + 'jastip2024').substring(0, 15)
             const validToken = btoa(phone + 'jastip2024').substring(0, 15);
-            console.log('Token dari URL:', token);
-            console.log('Token yang benar:', validToken);
             return token === validToken;
         }
 
-        // Fungsi ambil data customer dari localStorage
-        function getCustomerData(phone) {
-            const allCustomers = JSON.parse(localStorage.getItem('jastip_customers')) || {};
-            return allCustomers[phone];
-        }
-
-        // Fungsi utama untuk validasi akses
-        function validateAccess() {
+        async function loadCustomerData() {
             const phone = getUrlParameter('id');
             const token = getUrlParameter('token');
             
             const app = document.getElementById('app');
             
-            // Cek apakah parameter lengkap
             if (!phone || !token) {
                 app.innerHTML = `
                     <div class="card error-card">
                         <h2>🔒 Akses Ditolak</h2>
                         <p>Link tidak lengkap.</p>
-                        <p style="margin-top: 20px;">Hubungi admin untuk mendapatkan link yang benar.</p>
                     </div>
                 `;
                 return;
             }
 
-            // Validasi token
             if (!validateToken(phone, token)) {
                 app.innerHTML = `
                     <div class="card error-card">
                         <h2>🔒 Akses Ditolak</h2>
-                        <p>Token tidak valid.</p>
-                        <p style="margin-top: 20px;">Minta link baru ke admin.</p>
+                        <p>Token tidak valid. Minta link baru ke admin.</p>
                     </div>
                 `;
                 return;
             }
 
-            // Ambil data customer
-            const customer = getCustomerData(phone);
-            
-            if (!customer) {
+            // Ambil data dari Supabase
+            const { data: customer, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('phone', phone)
+                .maybeSingle();
+
+            if (error || !customer) {
                 app.innerHTML = `
                     <div class="card error-card">
                         <h2>❌ Data Tidak Ditemukan</h2>
                         <p>Tidak ada pesanan untuk nomor ${phone}</p>
-                        <p style="margin-top: 20px;">Hubungi admin untuk informasi lebih lanjut.</p>
                     </div>
                 `;
                 return;
             }
 
-            // Tampilkan data customer
             displayCustomerData(customer);
         }
 
-        // Fungsi untuk menampilkan data customer
         function displayCustomerData(customer) {
             const app = document.getElementById('app');
             
@@ -256,15 +226,10 @@
             let totalItems = 0;
             let productsHtml = '';
             
-            // Hitung total dari semua produk
-            customer.products.forEach((p, index) => {
+            customer.products.forEach(p => {
                 const subtotal = p.qty * p.harga;
                 totalBelanja += subtotal;
                 totalItems += p.qty;
-                
-                // Tentukan warna status
-                const statusColor = p.status === 'READY' ? '#d4edda' : '#fff3cd';
-                const statusText = p.status === 'READY' ? '✅ READY' : '⏳ PREORDER';
                 
                 productsHtml += `
                     <tr>
@@ -272,21 +237,15 @@
                         <td>${p.qty}</td>
                         <td>Rp ${p.harga.toLocaleString()}</td>
                         <td>Rp ${subtotal.toLocaleString()}</td>
-                        <td><span style="background: ${statusColor}; padding: 3px 8px; border-radius: 50px; font-size: 0.8rem;">${statusText}</span></td>
+                        <td>${p.status}</td>
                     </tr>
                 `;
             });
 
-            const sisa = totalBelanja - customer.totalDp;
-            
-            // Cek apakah ini first order (dalam 24 jam terakhir)
-            const isFirstOrder = customer.firstOrder && 
-                (new Date() - new Date(customer.firstOrder)) < 24 * 60 * 60 * 1000;
+            const sisa = totalBelanja - (customer.total_dp || 0);
+            const isFirstOrder = customer.first_order && 
+                (new Date() - new Date(customer.first_order)) < 24 * 60 * 60 * 1000;
 
-            // Hitung jumlah produk
-            const orderCount = customer.products.length;
-
-            // Tampilan utama
             app.innerHTML = `
                 <div class="card">
                     <div class="header">
@@ -303,11 +262,11 @@
                     <div class="info-card">
                         <div class="info-row">
                             <span class="label">Nama Customer</span>
-                            <span class="value">${customer.nama}</span>
+                            <span class="value">${customer.name}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">No HP</span>
-                            <span class="value">${customer.noHp}</span>
+                            <span class="value">${customer.phone}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Total Item</span>
@@ -315,7 +274,7 @@
                         </div>
                     </div>
 
-                    <h3 style="margin: 20px 0 10px;">📋 Detail Produk</h3>
+                    <h3>📋 Detail Produk</h3>
                     <table class="product-table">
                         <thead>
                             <tr>
@@ -338,7 +297,7 @@
                         </div>
                         <div class="total-row">
                             <span>DP Dibayar</span>
-                            <span style="color: #28a745;">Rp ${customer.totalDp.toLocaleString()}</span>
+                            <span style="color: #28a745;">Rp ${(customer.total_dp || 0).toLocaleString()}</span>
                         </div>
                         <div class="total-row grand-total">
                             <span>Sisa Pembayaran</span>
@@ -346,25 +305,16 @@
                         </div>
                     </div>
 
-                    <div class="order-history">
-                        📊 Total pesanan: ${orderCount} produk | Terakhir update: ${customer.lastUpdate}
-                    </div>
-
                     <div class="important-note">
                         <strong>⚠️ PENTING</strong><br>
                         Transfer BCA hanya atas nama <strong>CELINE PUTRI C</strong><br>
-                        <small>No. Rekening: 1234567890 a.n. CELINE PUTRI C</small>
-                    </div>
-
-                    <div class="footer">
-                        Link ini khusus untuk ${customer.nama} - Simpan link ini untuk cek status berikutnya
+                        <small>No. Rekening: 1234567890</small>
                     </div>
                 </div>
             `;
         }
 
-        // Jalankan validasi saat halaman dimuat
-        window.onload = validateAccess;
+        window.onload = loadCustomerData;
     </script>
 </body>
 </html>
