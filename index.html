@@ -65,10 +65,6 @@
             margin-bottom: 15px;
             resize: vertical;
         }
-        textarea:focus {
-            border-color: #667eea;
-            outline: none;
-        }
         button {
             background: #28a745;
             color: white;
@@ -79,7 +75,6 @@
             font-weight: 600;
             cursor: pointer;
             margin-right: 10px;
-            border: 1px solid #1e7e34;
         }
         button:hover {
             background: #218838;
@@ -99,6 +94,7 @@
         .customer-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 2px solid #dee2e6;
@@ -112,10 +108,17 @@
             font-size: 0.85rem;
             word-break: break-all;
             margin: 10px 0;
+            border: 1px solid #ccc;
         }
         .copy-btn {
             background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 0;
+            border-radius: 5px;
             width: 100%;
+            cursor: pointer;
+            font-weight: bold;
             margin-top: 5px;
         }
         .stats {
@@ -153,40 +156,33 @@
     <div class="container">
         <div class="header">
             <h1>📦 JASTIPBYCELINE ADMIN</h1>
-            <p>🔐 Dengan Supabase · Data online, akses dari mana saja</p>
+            <p>✅ Terkoneksi ke Supabase!</p>
         </div>
         
         <div class="main-content">
-            <div id="connectionStatus" class="status-connected">
-                ✅ Terkoneksi ke Supabase!
-            </div>
-
             <div class="import-section">
                 <h2>📋 IMPORT DATA CUSTOMER</h2>
                 <div class="format-info">
                     <strong>Format (pisah dengan spasi):</strong><br>
                     NoHP Nama Produk Qty Harga Status DP<br>
-                    Contoh: 81365245060 danny5060 sepatu 1 159000 dapat 50000
+                    Contoh: 81234567890 budi sepatu 2 200000 ready 100000
                 </div>
-                <textarea id="importData" placeholder="Tempel data disini..."></textarea>
-                <button onclick="importToSupabase()">✨ IMPORT KE DATABASE</button>
+                <textarea id="importData" placeholder="Tempel data disini...">81234567890 budi sepatu 2 200000 ready 100000</textarea>
+                <button onclick="importData()">✨ IMPORT KE DATABASE</button>
+                <button onclick="loadCustomers()" style="background: #007bff;">🔄 REFRESH</button>
             </div>
 
             <h2>📱 DAFTAR CUSTOMER</h2>
-            <div id="customersList" class="customers-grid"></div>
-            
-            <div style="margin-top: 20px; padding: 10px; background: #fff3cd; border-radius: 8px;">
-                ⚠️ Data tersimpan di cloud Supabase. Customer bisa buka link langsung dari HP!
+            <div id="customersList" class="customers-grid">
+                <p style="text-align: center; color: #666;">Memuat data...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIG - LANGSUNG DIISI
+        // CONFIG SUPABASE
         const SUPABASE_URL = 'https://ntyetosvnafeuhnmljd.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50eWV0b3N2bmFmZXVsaG5tamxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MDI1MTgsImV4cCI6MjA4NzA3ODUxOH0.GwsN9AR9rHS8CNDZuC80_gN52lSl_IUa2qixuUGFynU';
-        
-        // Inisialisasi Supabase (hanya SEKALI)
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         function showNotification(message, isError = false) {
@@ -198,13 +194,12 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        function generatePrivateLink(phone) {
-            const baseUrl = window.location.origin;
+        function generateLink(phone) {
             const token = btoa(phone + 'jastip2024').substring(0, 15);
-            return `${baseUrl}/customer.html?id=${phone}&token=${token}`;
+            return window.location.origin + '/customer.html?id=' + phone + '&token=' + token;
         }
 
-        async function importToSupabase() {
+        async function importData() {
             const text = document.getElementById('importData').value;
             if (!text) {
                 showNotification('Masukkan data dulu!', true);
@@ -217,98 +212,95 @@
             for (let line of lines) {
                 line = line.trim();
                 if (!line) continue;
-
-                const parts = line.split(/\s+/);
-                if (parts.length < 6) continue;
-
-                let noHp, nama, produk, qty, harga, status, dp = 0;
                 
-                if (parts.length >= 7) {
-                    [noHp, nama, produk, qty, harga, status, dp] = parts;
-                } else {
-                    [noHp, nama, produk, qty, harga, status] = parts;
+                const parts = line.split(/\s+/);
+                if (parts.length < 6) {
+                    console.log('Skipping line (kurang kolom):', line);
+                    continue;
                 }
-
-                noHp = noHp.replace(/\D/g, '');
+                
+                const [noHp, nama, produk, qty, harga, status, dp = 0] = parts;
                 
                 try {
                     // Cek apakah customer sudah ada
-                    const { data: existing } = await supabase
+                    const { data: existing, error: checkError } = await supabase
                         .from('customers')
                         .select('*')
                         .eq('phone', noHp)
                         .maybeSingle();
-
-                    const productData = {
+                    
+                    const product = {
                         nama: produk,
-                        qty: parseInt(qty) || 0,
-                        harga: parseInt(harga) || 0,
+                        qty: parseInt(qty),
+                        harga: parseInt(harga),
                         status: status,
-                        dp: parseInt(dp) || 0
+                        dp: parseInt(dp)
                     };
-
+                    
                     if (existing) {
                         // Update existing customer
                         const currentProducts = existing.products || [];
-                        currentProducts.push(productData);
+                        currentProducts.push(product);
                         
-                        await supabase
+                        const { error: updateError } = await supabase
                             .from('customers')
-                            .update({ 
+                            .update({
                                 products: currentProducts,
-                                total_dp: (existing.total_dp || 0) + (parseInt(dp) || 0),
+                                total_dp: (existing.total_dp || 0) + parseInt(dp),
                                 last_update: new Date().toLocaleString('id-ID')
                             })
                             .eq('phone', noHp);
+                        
+                        if (updateError) console.error('Update error:', updateError);
                     } else {
-                        // Customer baru
-                        await supabase
+                        // Insert new customer
+                        const { error: insertError } = await supabase
                             .from('customers')
                             .insert([{
                                 phone: noHp,
                                 name: nama,
-                                products: [productData],
-                                total_dp: parseInt(dp) || 0,
+                                products: [product],
+                                total_dp: parseInt(dp),
                                 last_update: new Date().toLocaleString('id-ID'),
                                 first_order: new Date().toISOString()
                             }]);
+                        
+                        if (insertError) console.error('Insert error:', insertError);
                     }
                     imported++;
                 } catch (e) {
-                    console.error('Error import:', e);
-                    showNotification('Error: ' + e.message, true);
+                    console.error('Error:', e);
                 }
             }
-
-            if (imported > 0) {
-                showNotification(`✅ Berhasil import ${imported} produk`);
-                document.getElementById('importData').value = '';
-                loadCustomers();
-            } else {
-                showNotification('❌ Tidak ada data yang diimport', true);
-            }
+            
+            showNotification(`✅ Berhasil import ${imported} produk`);
+            document.getElementById('importData').value = '';
+            loadCustomers();
         }
 
         async function loadCustomers() {
+            const container = document.getElementById('customersList');
+            container.innerHTML = '<p style="text-align: center; color: #666;">Memuat data...</p>';
+            
             try {
                 const { data: customers, error } = await supabase
                     .from('customers')
                     .select('*')
                     .order('created_at', { ascending: false });
-
+                
                 if (error) {
                     console.error('Error loading:', error);
+                    container.innerHTML = '<p style="text-align: center; color: red;">Error: ' + error.message + '</p>';
                     return;
                 }
-
-                const container = document.getElementById('customersList');
-                container.innerHTML = '';
-
+                
                 if (!customers || customers.length === 0) {
                     container.innerHTML = '<p style="text-align: center; color: #666;">Belum ada data customer</p>';
                     return;
                 }
-
+                
+                container.innerHTML = '';
+                
                 customers.forEach(customer => {
                     let totalBelanja = 0;
                     let totalItems = 0;
@@ -318,7 +310,7 @@
                         totalItems += p.qty;
                     });
 
-                    const link = generatePrivateLink(customer.phone);
+                    const link = generateLink(customer.phone);
                     const sisa = totalBelanja - (customer.total_dp || 0);
 
                     const card = document.createElement('div');
@@ -342,14 +334,13 @@
                     container.appendChild(card);
                 });
             } catch (e) {
-                console.error('Error:', e);
+                console.error('Fatal error:', e);
+                container.innerHTML = '<p style="text-align: center; color: red;">Error: ' + e.message + '</p>';
             }
         }
 
         function copyLink(phone) {
-            const linkElement = document.getElementById(`link-${phone}`);
-            const link = linkElement.textContent;
-            
+            const link = generateLink(phone);
             navigator.clipboard.writeText(link).then(() => {
                 showNotification('✅ Link disalin!');
             }).catch(() => {
@@ -364,8 +355,10 @@
             });
         }
 
-        // Load data otomatis saat halaman dibuka
-        loadCustomers();
+        // Load data saat halaman dimuat
+        window.onload = function() {
+            loadCustomers();
+        };
     </script>
 </body>
 </html>
